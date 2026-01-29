@@ -1,0 +1,96 @@
+/* =========================================================
+   App layout primitives (navbar/sidebar/content)
+   Use your own wrapper classes; avoid fighting Bulma layout.
+   ========================================================= */
+
+/* Navbar */
+.navbar {
+  background-color: var(--color-secundario);
+  border-bottom: 1px solid var(--color-borde);
+  color: var(--color-texto);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+.navbar-item, .navbar-link { color: var(--color-texto); }
+.navbar-item:hover, .navbar-link:hover {
+  background-color: var(--color-hover);
+  color: #fff;
+}
+
+/* Sidebar */
+.sidebar {
+  background: linear-gradient(180deg, #d3d5d6 0%, #b8bbbc 100%);
+  color: var(--color-texto);
+  min-height: 100vh;
+  border-right: 1px solid var(--color-borde);
+  width: var(--sidebar-width);
+}
+
+.sidebar a {
+  color: var(--color-texto);
+  display: block;
+  padding: 0.75rem 1rem;
+  transition: 0.2s;
+  border-radius: 6px;
+  margin: 4px 8px;
+}
+.sidebar a:hover {
+  background-color: var(--color-hover);
+  color: #fff;
+}
+.sidebar a.is-active {
+  background-color: var(--primary);
+  color: #fff;
+}
+
+/* App shell: sidebar + content */
+.app-shell {
+  display: flex;
+  min-height: calc(100vh - var(--topnav-height, 0px)); /* si no tienes variable, no pasa nada */
+}
+
+/* Content */
+.content-main {
+  flex: 1;
+  padding: var(--content-padding);
+  background-color: var(--color-fondo);
+  min-width: 0;
+}
+
+/* Full width content (e.g. auth pages) */
+.content-main.full-width {
+  margin-left: 0 !important;
+  width: 100%;
+  padding: 0;
+}
+
+body.login-page .content-main {
+  margin-left: 0;
+}
+
+/* Footer */
+.footer {
+  background-color: var(--color-secundario);
+  color: var(--color-texto-secundario);
+  border-top: 1px solid var(--color-borde);
+  text-align: center;
+  padding: 1rem;
+}
+
+/* Responsive */
+@media (min-width: 1024px) {
+  .sidebar { max-width: var(--sidebar-width); }
+}
+
+@media (max-width: 768px) {
+  .app-shell {
+    flex-direction: column;
+  }
+
+  .sidebar {
+    min-height: auto;
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid var(--color-borde);
+  }
+}
+

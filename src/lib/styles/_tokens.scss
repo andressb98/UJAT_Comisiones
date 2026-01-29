@@ -1,0 +1,35 @@
+/* =========================================================
+   Design tokens (CSS variables)
+   - Runtime theming for your custom UI layer (sidebar, layout, etc.)
+   - Bulma DOES NOT read these; Bulma reads Sass vars (see _variables.scss)
+   ========================================================= */
+:root {
+  /* Palette */
+  --color-fondo: #008080;        /* Turquesa base (body) */
+  --color-secundario: #d3d5d6;   /* Gris claro neutro (paneles, tarjetas) */
+  --color-terciario: #c0c3c4;    /* Gris medio para hover y resaltes */
+  --color-borde: #b0b3b4;        /* Bordes suaves */
+  --color-texto: #0d1b1e;        /* Texto principal oscuro */
+  --color-texto-secundario: #34495e; /* Texto secundario más tenue */
+  --color-placeholder: #6B7280;  /* Placeholder inputs */
+  --color-hover: #009999;        /* Turquesa más claro al hover */
+
+  /* Actions (for your custom CSS usage) */
+  --primary: #009999;
+  --primary-light: #00b3b350;
+  --link: #007777;
+  --info: #17a2b8;
+  --success: #10B981;
+  --warning: #FBBF24;
+  --danger: #EF4444;
+
+  /* Layout */
+  --sidebar-width: 280px;
+  --content-padding: 1rem;
+
+  /* Derived */
+  --body-background-color: var(--color-fondo);
+  --text-color: var(--color-texto);
+  --title-color: var(--color-texto);
+  --subtitle-color: var(--color-texto-secundario);
+}

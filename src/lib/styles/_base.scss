@@ -1,0 +1,37 @@
+/* =========================================================
+   Base global styles
+   ========================================================= */
+html, body {
+  background-color: var(--color-fondo);
+  color: var(--color-texto);
+  font-family: "Inter", system-ui, sans-serif;
+}
+
+body {
+  background: linear-gradient(135deg, #008080 40%, #006666 100%);
+  min-height: 100vh;
+}
+
+a {
+  color: var(--link);
+  transition: color 0.2s ease;
+  text-decoration: none;
+}
+a:hover {
+  color: var(--primary);
+}
+
+/* Make Bulma's .section less tall for app layouts */
+.section {
+  padding: 0.5rem 0.25rem;
+}
+
+/* Scrollbar (WebKit) */
+::-webkit-scrollbar { width: 8px; }
+::-webkit-scrollbar-thumb {
+  background-color: var(--color-borde);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background-color: var(--primary);
+}

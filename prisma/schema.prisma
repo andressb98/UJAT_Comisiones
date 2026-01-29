@@ -1,0 +1,516 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+/**
+ * =========================
+ * ENUMS (sin strings sueltos)
+ * =========================
+ */
+
+enum RolCodigo {
+  SUPER_ADMIN
+  ADMIN_DIVISION
+  SECRETARIA_DIVISION
+  COORDINADOR_UNIDAD
+  SERVICIO_SOCIAL
+}
+
+enum TipoGradoProfesor {
+  TECNICO_SUPERIOR_UNIVERSITARIO
+  LICENCIATURA
+  INGENIERIA
+  MAESTRIA
+  DOCTORADO
+}
+
+enum CategoriaGradoProfesor {
+  CORTO
+  COMPLETO
+}
+
+enum PermisoCodigo {
+  // ---- Usuarios / Roles / Permisos ----
+  USUARIOS_VER
+  USUARIOS_CREAR
+  USUARIOS_EDITAR
+  USUARIOS_DESACTIVAR
+
+  ROLES_VER
+  ROLES_GESTIONAR
+
+  PERMISOS_VER
+  PERMISOS_GESTIONAR
+
+  // ---- División / Unidades ----
+  DIVISION_VER
+  DIVISION_EDITAR
+
+  TIPOS_COMISION_VER
+  TIPOS_COMISION_CREAR
+  TIPOS_COMISION_EDITAR
+  TIPOS_COMISION_DESACTIVAR
+
+  LUGARES_VER
+  LUGARES_CREAR
+  LUGARES_EDITAR
+  LUGARES_DESACTIVAR
+
+  UNIDADES_VER
+  UNIDADES_CREAR
+  UNIDADES_EDITAR
+  UNIDADES_DESACTIVAR
+
+  // ---- Docentes (catálogo) ----
+  DOCENTES_VER
+  DOCENTES_CREAR
+  DOCENTES_EDITAR
+  DOCENTES_DESACTIVAR
+
+  // ---- Catálogos (tipo comisión, lugares, grados, etc.) ----
+  CATALOGOS_VER
+  CATALOGOS_GESTIONAR
+
+  // ---- Comisiones ----
+  COMISIONES_VER
+  COMISIONES_CREAR
+  COMISIONES_EDITAR
+  COMISIONES_CANCELAR
+  COMISIONES_CERRAR
+  COMISIONES_ASIGNAR_DOCENTES
+  COMISIONES_DESASIGNAR_DOCENTES
+
+  // ---- Bitácora ----
+  BITACORA_VER
+}
+
+enum EstatusComision {
+  BORRADOR
+  ACTIVA
+  CERRADA
+  CANCELADA
+}
+
+enum FrecuenciaRepeticion {
+  UNICA
+  DIARIA
+  SEMANAL
+  QUINCENAL
+  MENSUAL
+  ANUAL
+  PERSONALIZADA
+}
+
+enum TipoUbicacion {
+  AULA
+  OFICINA
+  EDIFICIO
+  VIRTUAL
+  OTRO
+}
+
+enum TipoMovimientoBitacora {
+  LOGIN
+  LOGOUT
+  CREAR
+  ACTUALIZAR
+  ELIMINAR
+  ASIGNAR
+  DESASIGNAR
+  CANCELAR
+  CERRAR
+}
+
+enum AlcanceComision {
+  UNIDAD
+  DIVISION
+  UNIVERSIDAD
+}
+
+/**
+ * =========================
+ * USUARIOS / ROLES / PERMISOS
+ * =========================
+ */
+
+model Usuario {
+  id            Int      @id @default(autoincrement())
+  nombre        String
+  correo        String   @unique
+  passwordHash  String
+  activo        Boolean  @default(true)
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+
+  // N:M roles
+  roles UsuarioRol[]
+
+  // Perfiles opcionales (solo para usuarios que sí entran)
+  coordinador    CoordinadorUnidad?
+  adminDivision  AdministradorDivision?
+  secretaria     SecretariaDivision?
+  servicioSocial UsuarioServicioSocial[]
+
+  // Auditoría / actividad
+  bitacoras Bitacora[]
+
+  // Negocio
+  comisionesCreadas Comision[] @relation("UsuarioCreadorComision")
+
+  comisionesCanceladas Comision[] @relation("ComisionCanceladaPor")
+  comisionesCerradas   Comision[] @relation("ComisionCerradaPor")
+
+  sesiones Sesion[]
+
+  @@index([activo])
+}
+
+model Sesion {
+  id        String  @id @default(cuid())
+  usuarioId Int
+  usuario   Usuario @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  // Guardamos HASH del token (el token real vive en cookie)
+  tokenHash String @unique
+
+  creadoEn DateTime @default(now())
+  expiraEn DateTime
+
+  @@index([usuarioId])
+  @@index([expiraEn])
+}
+
+model Rol {
+  id          Int       @id @default(autoincrement())
+  codigo      RolCodigo @unique
+  nombre      String
+  descripcion String?
+
+  usuarios UsuarioRol[]
+  permisos RolPermiso[]
+
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+}
+
+model UsuarioRol {
+  usuarioId Int
+  rolId     Int
+
+  usuario Usuario @relation(fields: [usuarioId], references: [id])
+  rol     Rol     @relation(fields: [rolId], references: [id])
+
+  asignadoEn DateTime @default(now())
+
+  @@id([usuarioId, rolId])
+  @@index([rolId])
+}
+
+model Permiso {
+  id          Int           @id @default(autoincrement())
+  codigo      PermisoCodigo @unique
+  descripcion String?
+
+  roles RolPermiso[]
+
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+}
+
+model RolPermiso {
+  rolId     Int
+  permisoId Int
+
+  rol     Rol     @relation(fields: [rolId], references: [id])
+  permiso Permiso @relation(fields: [permisoId], references: [id])
+
+  creadoEn DateTime @default(now())
+
+  @@id([rolId, permisoId])
+  @@index([permisoId])
+}
+
+/**
+ * =========================
+ * DIVISION / UNIDADES / CARGOS
+ * =========================
+ */
+
+model Division {
+  id          Int     @id @default(autoincrement())
+  clave       String  @unique
+  siglas      String  @unique
+  descripcion String?
+
+  unidadesAdministrativas UnidadAdministrativa[]
+  secretariasDivisiones   SecretariaDivision[]
+  administradoresDivision AdministradorDivision[]
+  UsuarioServicioSociales UsuarioServicioSocial[]
+
+  comisiones Comision[]
+
+  docentes Docente[] // <- docentes pertenecen a división
+
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+}
+
+model UnidadAdministrativa {
+  id                      Int                     @id @default(autoincrement())
+  clave                   String                  @unique
+  siglas                  String
+  descripcion             String?
+  administradoresDivision AdministradorDivision[]
+  secretariasDivisiones   SecretariaDivision[]
+  UsuarioServicioSociales UsuarioServicioSocial[]
+
+  divisionId Int
+  division   Division @relation(fields: [divisionId], references: [id])
+
+  coordinadores CoordinadorUnidad[]
+  comisiones    Comision[]
+
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+
+  @@unique([clave, divisionId])
+  @@unique([siglas, divisionId])
+  @@index([divisionId])
+}
+
+// Admin de división: 1 usuario -> 1 división
+model AdministradorDivision {
+  id        Int     @id @default(autoincrement())
+  usuarioId Int     @unique
+  usuario   Usuario @relation(fields: [usuarioId], references: [id])
+
+  divisionId Int
+  division   Division @relation(fields: [divisionId], references: [id])
+
+  unidadAdministrativaId Int
+  unidadAdministrativa   UnidadAdministrativa @relation(fields: [unidadAdministrativaId], references: [id])
+
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+
+  @@index([divisionId])
+}
+
+model SecretariaDivision {
+  id        Int     @id @default(autoincrement())
+  usuarioId Int     @unique
+  usuario   Usuario @relation(fields: [usuarioId], references: [id])
+
+  divisionId Int
+  division   Division @relation(fields: [divisionId], references: [id])
+
+  unidadAdministrativaId Int
+  unidadAdministrativa   UnidadAdministrativa @relation(fields: [unidadAdministrativaId], references: [id])
+
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+
+  @@index([divisionId])
+}
+
+// Coordinador: solo de unidad (y por unidad obtienes su división)
+model CoordinadorUnidad {
+  id        Int     @id @default(autoincrement())
+  usuarioId Int     @unique
+  usuario   Usuario @relation(fields: [usuarioId], references: [id])
+
+  unidadId Int
+  unidad   UnidadAdministrativa @relation(fields: [unidadId], references: [id])
+
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+
+  @@index([unidadId])
+}
+
+model UsuarioServicioSocial {
+  id        Int     @id @default(autoincrement())
+  usuarioId Int // Relación con el usuario
+  usuario   Usuario @relation(fields: [usuarioId], references: [id])
+
+  divisionId Int // Relación con la división
+  division   Division @relation(fields: [divisionId], references: [id])
+
+  unidadAdministrativaId Int // Relación con la unidad administrativa
+  unidadAdministrativa   UnidadAdministrativa @relation(fields: [unidadAdministrativaId], references: [id])
+
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+
+  @@index([divisionId]) // Index para optimizar consultas por división
+  @@index([unidadAdministrativaId]) // Index para optimizar consultas por unidad administrativa
+}
+
+/**
+ * =========================
+ * DOCENTES (CATÁLOGO SIN LOGIN)
+ * =========================
+ */
+
+model Docente {
+  id      Int    @id @default(autoincrement())
+  cveProf String @unique
+
+  divisionId Int
+  division   Division @relation(fields: [divisionId], references: [id])
+
+  areaConProf       String?
+  gradoPrefijo      String? // ej "Ing.", "Dr.", "Mtro."
+  gradoEspecialidad String? // ej "Ingeniería en Sistemas Computacionales"
+
+  nombreProf   String
+  apePatProf   String
+  apeMatProf   String?
+  contratoProf String?
+  cateProf     String?
+  correoProf   String?
+
+  activo Boolean @default(true)
+
+  comisiones DocenteComision[]
+
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+
+  @@index([divisionId])
+  @@index([activo])
+}
+
+/**
+ * =========================
+ * COMISIONES
+ * =========================
+ */
+
+model TipoComision {
+  id                  Int              @id @default(autoincrement())
+  clave               String           @unique
+  nombre              String           @unique
+  descripcion         String?
+  alcance             AlcanceComision?
+  departamentoCreador String?
+  activo              Boolean          @default(true)
+
+  comisiones Comision[]
+
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+}
+
+model Comision {
+  id            Int    @id @default(autoincrement())
+  claveComision String @unique
+
+  tipoComisionId Int
+  tipoComision   TipoComision @relation(fields: [tipoComisionId], references: [id])
+
+  fechaInicio DateTime
+  fechaFin    DateTime?
+
+  horaInicio String?
+  horaFin    String?
+
+  frecuenciaRepeticion FrecuenciaRepeticion?
+  referencia           String?
+
+  creadorId Int?
+  creador   Usuario? @relation("UsuarioCreadorComision", fields: [creadorId], references: [id])
+
+  unidadAdministrativaId Int
+  unidadAdministrativa   UnidadAdministrativa @relation(fields: [unidadAdministrativaId], references: [id])
+  divisionId             Int
+  division               Division             @relation(fields: [divisionId], references: [id])
+
+  estatus EstatusComision @default(ACTIVA)
+
+  canceladaEn    DateTime?
+  canceladaPorId Int?
+  canceladaPor   Usuario?  @relation("ComisionCanceladaPor", fields: [canceladaPorId], references: [id])
+
+  cerradaEn    DateTime?
+  cerradaPorId Int?
+  cerradaPor   Usuario?  @relation("ComisionCerradaPor", fields: [cerradaPorId], references: [id])
+
+  observaciones String?
+
+  // Relaciones
+  docentesComision DocenteComision[]
+  lugarId          Int?
+  lugar            Lugar?            @relation(fields: [lugarId], references: [id])
+
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+
+  @@index([tipoComisionId])
+  @@index([creadorId])
+  @@index([unidadAdministrativaId])
+  @@index([divisionId])
+  @@index([estatus])
+  @@index([canceladaPorId])
+  @@index([cerradaPorId])
+}
+
+model DocenteComision {
+  docenteId       Int
+  comisionId      Int
+  fechaAsignacion DateTime @default(now())
+
+  docente  Docente  @relation(fields: [docenteId], references: [id])
+  comision Comision @relation(fields: [comisionId], references: [id])
+
+  @@id([docenteId, comisionId])
+  @@index([comisionId])
+}
+
+/**
+ * =========================
+ * LUGARES
+ * =========================
+ */
+
+model Lugar {
+  id               Int            @id @default(autoincrement())
+  clave            String         @unique
+  descripcion      String?
+  tipoUbicacion    TipoUbicacion?
+  edificio         String?
+  salonOficinaAula String?
+  municipioCiudad  String?
+  coloniaBarrio    String?
+  activo           Boolean        @default(true)
+
+  comisiones Comision[]
+
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+}
+
+/**
+ * =========================
+ * BITÁCORA
+ * =========================
+ */
+
+model Bitacora {
+  id Int @id @default(autoincrement())
+
+  usuarioId Int
+  usuario   Usuario @relation(fields: [usuarioId], references: [id])
+
+  fechaHora      DateTime               @default(now())
+  tipoMovimiento TipoMovimientoBitacora
+
+  tablaAfectada String?
+  registroId    Int?
+  descripcion   String?
+  ipOrigen      String?
+}

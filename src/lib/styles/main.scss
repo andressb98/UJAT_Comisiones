@@ -1,0 +1,16 @@
+/* =========================================================
+   Global stylesheet entrypoint
+   Import this ONCE in src/routes/+layout.svelte
+   ========================================================= */
+
+/* 1) Bulma Sass configuracion */
+@use "./variables" as *;
+
+/* 2) Bulma */
+@use "bulma";
+
+/* 3) tokens + estilos globales + overrides */
+@use "./tokens";
+@use "./base";
+@use "./bulma-overrides";
+@use "./layout";
