@@ -3,27 +3,23 @@
 	import { page } from '$app/stores';
 	import { onDestroy } from 'svelte';
 	import { activeMenuItems } from '$lib/stores/menuStore';
-	import { recomputeMenu } from '$lib/stores/menuStore'; // Asegúrate de importar recomputeMenu
+	import { recomputeMenu } from '$lib/stores/menuStore'; 
 	import type { MenuItem } from '$lib/config/menuConfig';
 
 	let menuItems: MenuItem[] = [];
 	let activeRoute = '';
 
-	// Suscripción a los elementos activos del menú
 	const unsub = activeMenuItems.subscribe((items) => (menuItems = items));
 
-	// Reactividad en función de la ruta activa
 	$: activeRoute = $page.url.pathname;
 
-	// Reactividad en función de los permisos del usuario
 	$: permisos = ($page.data.permisos ?? []) as string[];
-	$: recomputeMenu(permisos); // Llama a recomputeMenu para recalcular el menú basado en los permisos
+	$: recomputeMenu(permisos);
 
 	function navigateTo(route: string) {
 		goto(route);
 	}
 
-	// Limpieza de la suscripción cuando el componente se destruya
 	onDestroy(() => unsub());
 </script>
 
@@ -51,8 +47,6 @@
 </aside>
 
 <style>
-	/* Tu layout.scss ya define .sidebar general.
-     Aquí solo pongo lo mínimo que ocupa el componente (sin cambiar colores). */
 
 	.sidebar-header {
 		margin-bottom: 1.25rem;
