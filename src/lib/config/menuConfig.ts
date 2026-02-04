@@ -17,7 +17,7 @@ export const MENU_CATALOGO: MenuItem[] = [
 
 export const MENU_REGISTRO: MenuItem[] = [
   { label: "Captura", route: "/captura", permiso: "COMISIONES_CREAR" },
-  { label: "Registro", route: "/menu/Registro", permiso: "COMISIONES_VER" }
+  { label: "Reportes", route: "/reportes", permiso: "COMISIONES_VER" }
 ];
 
 export const MENU_CONFIGURACION: MenuItem[] = [
