@@ -81,7 +81,7 @@ const PERMISOS: { codigo: PermisoCodigo; descripcion: string }[] = [
 const ROLES: { codigo: RolCodigo; nombre: string; descripcion: string }[] = [
   { codigo: "SUPER_ADMIN", nombre: "Super Admin", descripcion: "Acceso total al sistema" },
   { codigo: "ADMIN_DIVISION", nombre: "Admin de División", descripcion: "Administra una división" },
-  { codigo: "SECRETARIA_DIVISION", nombre: "Secretaria de División", descripcion: "Gestiona tareas administrativas de una división" },
+  { codigo: "SECRETARIA_UNIDAD", nombre: "Secretaria de División", descripcion: "Gestiona tareas administrativas de una división" },
   { codigo: "COORDINADOR_UNIDAD", nombre: "Coordinador de Unidad", descripcion: "Administra una unidad administrativa" },
   { codigo: "SERVICIO_SOCIAL", nombre: "Servicio Social", descripcion: "Rol básico de apoyo" },
 ];
@@ -104,22 +104,7 @@ const PERMISOS_POR_ROL: Record<RolCodigo, PermisoCodigo[]> = {
     "BITACORA_VER",
   ],
 
-  SECRETARIA_DIVISION: [
-    "USUARIOS_VER", "USUARIOS_CREAR", "USUARIOS_EDITAR", "USUARIOS_DESACTIVAR",
-    "PERMISOS_VER", "PERMISOS_GESTIONAR",
-    "DIVISION_VER", "DIVISION_EDITAR",
-    "UNIDADES_VER", "UNIDADES_CREAR", "UNIDADES_EDITAR", "UNIDADES_DESACTIVAR",
-    "TIPOS_COMISION_VER", "TIPOS_COMISION_CREAR", "TIPOS_COMISION_EDITAR", "TIPOS_COMISION_DESACTIVAR",
-    "LUGARES_VER", "LUGARES_CREAR", "LUGARES_EDITAR", "LUGARES_DESACTIVAR",
-    "DOCENTES_VER", "DOCENTES_CREAR", "DOCENTES_EDITAR", "DOCENTES_DESACTIVAR",
-    "CATALOGOS_VER", "CATALOGOS_GESTIONAR",
-    "COMISIONES_VER", "COMISIONES_CREAR", "COMISIONES_EDITAR", "COMISIONES_CANCELAR", "COMISIONES_CERRAR",
-    "COMISIONES_ASIGNAR_DOCENTES", "COMISIONES_DESASIGNAR_DOCENTES",
-    "BITACORA_VER",
-  ],
-
   COORDINADOR_UNIDAD: [
-    "DIVISION_VER",
     "UNIDADES_VER",
     "LUGARES_VER", "LUGARES_CREAR", "LUGARES_EDITAR", "LUGARES_DESACTIVAR",
     "TIPOS_COMISION_VER", "TIPOS_COMISION_CREAR", "TIPOS_COMISION_EDITAR",
@@ -127,14 +112,19 @@ const PERMISOS_POR_ROL: Record<RolCodigo, PermisoCodigo[]> = {
     "CATALOGOS_VER",
     "COMISIONES_VER", "COMISIONES_CREAR", "COMISIONES_EDITAR", "COMISIONES_CANCELAR",
     "COMISIONES_ASIGNAR_DOCENTES", "COMISIONES_DESASIGNAR_DOCENTES",
-    "BITACORA_VER",
+  ],
+
+  SECRETARIA_UNIDAD: [
+    "UNIDADES_VER",
+    "LUGARES_VER", "LUGARES_CREAR", "LUGARES_EDITAR", "LUGARES_DESACTIVAR",
+    "TIPOS_COMISION_VER", "TIPOS_COMISION_CREAR", "TIPOS_COMISION_EDITAR", "TIPOS_COMISION_DESACTIVAR",
+    "DOCENTES_VER",
+    "CATALOGOS_VER",
+    "COMISIONES_VER", "COMISIONES_CREAR", "COMISIONES_EDITAR",
+    "COMISIONES_ASIGNAR_DOCENTES", "COMISIONES_DESASIGNAR_DOCENTES",
   ],
 
   SERVICIO_SOCIAL: [
-    "DIVISION_VER",
-    "UNIDADES_VER",
-    "DOCENTES_VER",
-    "CATALOGOS_VER",
     "COMISIONES_VER",
   ],
 };
@@ -179,14 +169,14 @@ function unidadesPorDivision(divisionClave: string, divisionId: number) {
 // 3) Seed principal
 // ----------------------------
 async function main() {
-  console.log("🚀 Iniciando seed...");
+  console.log("Iniciando seed...");
 
-  // ✅ DEV: limpieza total para recrear todo desde cero
+  // DEV: limpieza total para recrear todo desde cero
   // (hijos -> padres) para no romper FKs
   await prisma.$transaction(async (tx) => {
     await tx.coordinadorUnidad.deleteMany();
     await tx.administradorDivision.deleteMany();
-    await tx.secretariaDivision.deleteMany();
+    await tx.secretariaUnidad.deleteMany();
     await tx.usuarioRol.deleteMany();
 
     await tx.rolPermiso.deleteMany();
@@ -199,7 +189,7 @@ async function main() {
     await tx.usuario.deleteMany();
   });
 
-  // Conteos antes (deberían estar en 0 si limpió)
+  // Conteos antes
   const before = {
     permisos: await prisma.permiso.count(),
     roles: await prisma.rol.count(),
@@ -209,7 +199,7 @@ async function main() {
     usuarios: await prisma.usuario.count(),
     usuarioRoles: await prisma.usuarioRol.count(),
     adminDivision: await prisma.administradorDivision.count(),
-    secretariasDivision: await prisma.secretariaDivision.count(),
+    secretariasUnidad: await prisma.secretariaUnidad.count(),
     coordinadores: await prisma.coordinadorUnidad.count(),
   };
   console.log("Conteos antes:", before);
@@ -287,9 +277,9 @@ async function main() {
     // Helper: roles por código
     const rolSuper = await tx.rol.findUnique({ where: { codigo: "SUPER_ADMIN" }, select: { id: true } });
     const rolAdminDiv = await tx.rol.findUnique({ where: { codigo: "ADMIN_DIVISION" }, select: { id: true } });
-    const rolSecretaria = await tx.rol.findUnique({ where: { codigo: "SECRETARIA_DIVISION" }, select: { id: true } });
+    const rolSecretariaUnidad = await tx.rol.findUnique({ where: { codigo: "SECRETARIA_UNIDAD" }, select: { id: true } });
     const rolCoord = await tx.rol.findUnique({ where: { codigo: "COORDINADOR_UNIDAD" }, select: { id: true } });
-    if (!rolSuper || !rolAdminDiv || !rolSecretaria || !rolCoord) throw new Error("Faltan roles base");
+    if (!rolSuper || !rolAdminDiv || !rolSecretariaUnidad || !rolCoord) throw new Error("Faltan roles base");
 
     // 6) Usuarios + UsuarioRol + perfiles (AdministradorDivision / CoordinadorUnidad)
 
@@ -345,13 +335,11 @@ async function main() {
         select: { id: true },
       });
 
-      // (ya quedó creado el perfil adminDivision con la relación de unidad administrativa)
       void admin;
     }
 
-    // 6.3 Secretaria por división (5)
-    // 6.4 Secretaria de División por división
-    const secretariaPass = "SecretariaDivision123*";
+    // 6.3 Secretaria por unidad (5)
+    const secretariaPass = "SecretariaUnidad123*";
     for (const d of divisionesCreadas) {
       const correo = `secretaria.${d.clave.toLowerCase()}@demo.com`;
 
@@ -375,7 +363,7 @@ async function main() {
           passwordHash: await hashPassword(secretariaPass),
           activo: true,
           roles: {
-            create: [{ rolId: rolSecretaria.id }],  // Asignamos el rol de Secretaria de División
+            create: [{ rolId: rolSecretariaUnidad.id }],
           },
           secretaria: {
             create: {
@@ -387,11 +375,8 @@ async function main() {
         select: { id: true },
       });
 
-      // (ya quedó creada la secretariaDivision con la relación de unidad administrativa)
       void secretaria;
     }
-
-
 
 
     // 6.3 Coordinador por unidad (25)
@@ -417,7 +402,7 @@ async function main() {
 
     void superAdmin;
   }, {
-    timeout: 30000 // 30 segundos en lugar de 5
+    timeout: 30000
   });
 
   // Conteos después
@@ -430,13 +415,13 @@ async function main() {
     usuarios: await prisma.usuario.count(),
     usuarioRoles: await prisma.usuarioRol.count(),
     adminDivision: await prisma.administradorDivision.count(),
-    secretariasDivision: await prisma.secretariaDivision.count(),
+    secretariasUnidad: await prisma.secretariaUnidad.count(),
     coordinadores: await prisma.coordinadorUnidad.count(),
   };
   console.log("Conteos después:", after);
 
-  console.log("✅ Seed completado");
-  console.log("🔑 Credenciales demo:");
+  console.log("Seed completado");
+  console.log("Credenciales demo:");
   console.log("   superadmin@demo.com / SuperAdmin123*");
   console.log("   admin.d01@demo.com / AdminDivision123* (y así D02..D05)");
   console.log("   coord.d01-ua1@demo.com / CoordUnidad123* (y así para cada unidad)");
@@ -444,7 +429,7 @@ async function main() {
 
 main()
   .catch((e) => {
-    console.error("❌ Error en seed:", e);
+    console.error("Error en seed:", e);
     process.exit(1);
   })
   .finally(async () => {

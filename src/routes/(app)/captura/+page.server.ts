@@ -13,7 +13,7 @@ import { getAuditCtx } from "$lib/server/audit/auditContext";
 import { tipoComisionCreateSchema } from "$lib/schemas/tipoComision.schema";
 import { lugarCreateSchema } from "$lib/schemas/lugar.schema";
 import { createDecipheriv } from "crypto";
-import { success } from "zod";
+import { stringFormat, success } from "zod";
 
 // --- Helpers ---
 // Genera una clave única: Ej. COM-1706123456
@@ -54,14 +54,14 @@ export const load: PageServerLoad = async ({ url, locals }) => {
 export const actions: Actions = {
     create: async (event) => {
         const { request } = event;
-
+    
         const fd = await request.formData();
         const ctx = getAuditCtx(event);
         if (!ctx) return fail(401, { message: "No autorizado" });
-
+    
         const raw = Object.fromEntries(fd);
         const parsed = comisionCreateSchema.safeParse(raw);
-
+    
         if (!parsed.success) {
             return fail(400, {
                 message: "Datos inválidos",
@@ -69,13 +69,11 @@ export const actions: Actions = {
                 values: raw
             });
         }
-
-        // Generar clave única
-        const claveComision = await generateUniqueClave();
-
+    
         try {
-            const createdComision = await comisionesService.create({
-                clave: claveComision,
+
+            const { id } = await comisionesService.create({
+                folio: parsed.data.folio,
                 docenteId: parsed.data.docenteId,
                 tipoComisionId: parsed.data.tipoComisionId,
                 lugarId: parsed.data.lugarId,
@@ -84,16 +82,21 @@ export const actions: Actions = {
                 horaInicio: parsed.data.horaInicio,
                 horaFin: parsed.data.horaFin,
                 comentarios: parsed.data.comentarios || null,
-                creadorId: ctx.usuarioId,
                 divisionId: parsed.data.divisionId,
                 unidadAdministrativaId: parsed.data.unidadId
             }, ctx);
-
-            // Devolver la respuesta con 'ok' y el ID de la comisión creada
-            return { ok: true, id: createdComision.id };
-        } catch (error) {
+    
+            const comisionCompleta = await comisionesService.getById(id);
+    
+            return {
+                ok: true,
+                comision: comisionCompleta
+            };
+        } catch (error: any) {
             console.error("Error creando comisión:", error);
-            return fail(500, { message: "Error interno al guardar la comisión." });
+            return fail(400, { 
+                message: error.message || "Error interno al guardar la comisión." 
+            });
         }
     },
     createTipoComision: async (event) => {
@@ -159,9 +162,10 @@ export const actions: Actions = {
 
         try {
             await comisionesService.update(id, {
+                folio: parsed.data.folio,
                 tipoComisionId: Number(parsed.data.tipoComisionId),
                 lugarId: Number(parsed.data.lugarId),
-                fechaInicio: new Date(parsed.data.fechaInicio),
+                fechaInicio: new Date(parsed.data.fechaInicio + 'T00:00:00'),
                 fechaFin: parsed.data.fechaFin ? new Date(parsed.data.fechaFin) : null,
                 horaInicio: parsed.data.horaInicio,
                 horaFin: parsed.data.horaFin,

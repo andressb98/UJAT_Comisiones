@@ -8,6 +8,7 @@ export const estatusComisionEnum = z.enum(["ACTIVA", "CANCELADA", "CERRADA"]);
 
 // Schema para crear una comisión
 export const comisionCreateSchema = z.object({
+  folio: z.string().min(1, "El folio es requerido"),
   docenteId: z.coerce.number().int().positive("El ID del docente debe ser un número positivo").optional(),
   tipoComisionId: z.coerce.number().int().positive("El ID del tipo de comisión debe ser un número positivo").optional(),
   lugarId: z.coerce.number().int().positive("El ID del lugar debe ser un número positivo").optional(),

@@ -15,7 +15,7 @@ datasource db {
 enum RolCodigo {
   SUPER_ADMIN
   ADMIN_DIVISION
-  SECRETARIA_DIVISION
+  SECRETARIA_UNIDAD
   COORDINADOR_UNIDAD
   SERVICIO_SOCIAL
 }
@@ -152,7 +152,7 @@ model Usuario {
   // Perfiles opcionales (solo para usuarios que sí entran)
   coordinador    CoordinadorUnidad?
   adminDivision  AdministradorDivision?
-  secretaria     SecretariaDivision?
+  secretaria     SecretariaUnidad?
   servicioSocial UsuarioServicioSocial[]
 
   // Auditoría / actividad
@@ -247,7 +247,7 @@ model Division {
   descripcion String?
 
   unidadesAdministrativas UnidadAdministrativa[]
-  secretariasDivisiones   SecretariaDivision[]
+  secretariasUnidades   SecretariaUnidad[]
   administradoresDivision AdministradorDivision[]
   UsuarioServicioSociales UsuarioServicioSocial[]
 
@@ -265,7 +265,7 @@ model UnidadAdministrativa {
   siglas                  String
   descripcion             String?
   administradoresDivision AdministradorDivision[]
-  secretariasDivisiones   SecretariaDivision[]
+  secretariasUnidades   SecretariaUnidad[]
   UsuarioServicioSociales UsuarioServicioSocial[]
 
   divisionId Int
@@ -300,7 +300,7 @@ model AdministradorDivision {
   @@index([divisionId])
 }
 
-model SecretariaDivision {
+model SecretariaUnidad {
   id        Int     @id @default(autoincrement())
   usuarioId Int     @unique
   usuario   Usuario @relation(fields: [usuarioId], references: [id])
@@ -409,6 +409,7 @@ model TipoComision {
 model Comision {
   id            Int    @id @default(autoincrement())
   claveComision String @unique
+  folio         String
 
   tipoComisionId Int
   tipoComision   TipoComision @relation(fields: [tipoComisionId], references: [id])

@@ -10,7 +10,6 @@
 	import { Spanish } from 'flatpickr/dist/l10n/es.js';
 	import { page } from '$app/stores';
 	import { generarPdfComision } from '$lib/utils/comisiones/pdfGenerator';
-	import { resourceLimits } from 'worker_threads';
 
 	export let data: {
 		comisiones: any[];
@@ -35,6 +34,7 @@
 	let mode: 'create' | 'edit' = 'create'; // Para futuro soporte de edición
 
 	// Estado del formulario
+	let folio = '';
 	let docenteId: number | null = null;
 	let tipoComisionId: number | null = null;
 	let lugarId: number | null = null;
@@ -121,6 +121,7 @@
 	};
 
 	const resetForm = () => {
+		folio = '';
 		docenteId = null;
 		tipoComisionId = null;
 		fechaInicio = '';
@@ -165,7 +166,7 @@
 		const nombreDocente = `${docente?.nombreProf} ${docente?.apePatProf}`.toLowerCase();
 		const tipoNom = (c.tipoComision?.nombre || '').toLowerCase();
 		const lugarDesc = (c.lugar?.descripcion || '').toLowerCase();
-		const estadoNom = (c.estado || 'pendiente').toLowerCase();
+		const estadoNom = (c.estadoCalculado || 'PENDIENTE').toLowerCase();
 
 		// Filtros de texto
 		const matchDocente = nombreDocente.includes(filters.docente.toLowerCase());
@@ -206,9 +207,7 @@
 			// Función interna para normalizar a string YYYY-MM-DD sin desfase UTC
 			const toLocalISO = (dateVal) => {
 				const d = new Date(dateVal);
-				// Si el valor es inválido, retornamos null
 				if (isNaN(d.getTime())) return null;
-				// Ajustamos manualmente para obtener el año, mes y día local
 				const y = d.getFullYear();
 				const m = String(d.getMonth() + 1).padStart(2, '0');
 				const day = String(d.getDate()).padStart(2, '0');
@@ -224,7 +223,7 @@
 
 	// Validaciones
 	const validateDatesAndTimes = () => {
-		formErrors = []; // Limpiar errores previos manuales
+		formErrors = [];
 		if (fechaInicio && new Date(fechaInicio) < new Date(new Date().setHours(0, 0, 0, 0))) {
 			formErrors.push('La fecha de inicio no puede ser anterior al día de hoy.');
 			return false;
@@ -248,18 +247,18 @@
 			fieldErrors = {};
 		},
 		onSuccess: async (result) => {
-			const msg = mode === 'create' ? 'Comisión registrada' : 'Comisión actualizada';
-			toast.success(msg);
-			await invalidateAll();
+			if (result.type === 'success' && result.data?.ok) {
+				const comisionCreada = result.data.comision;
 
-			// Asegúrate de que 'result' tiene los datos que necesitamos
-			const idCreado = result?.id; // Aquí 'result' tiene la respuesta que contiene el ID de la comisión
-			const comisionParaPdf = data.comisiones.find((c) => c.id === idCreado);
+				toast.success(mode === 'create' ? 'Comisión registrada' : 'Actualizada');
 
-			if (comisionParaPdf) {
-				generarPdfComision(comisionParaPdf);
+				if (comisionCreada) {
+					await generarPdfComision(comisionCreada.id);
+				}
+
+				await invalidateAll();
+				closeForm();
 			}
-			closeForm(); // Cerrar formulario al éxito
 		},
 		onFailure: (state: EnhanceFailState) => {
 			formMessage = state.message;
@@ -443,7 +442,27 @@
 					{/if}
 					<FormAlert message={formMessage} {formErrors} variant="danger" />
 					<div class="columns is-multiline">
-						<div class="column is-4">
+						<div class="column is-3">
+							<div class="field">
+								<label class="label">Folio</label>
+								<div class="control has-icons-left">
+									<input
+										class="input {hasFieldError(fieldErrors, 'folio') ? 'is-danger' : ''}"
+										type="text"
+										name="folio"
+										placeholder="Ej: FAC-2024-001"
+										bind:value={folio}
+									/>
+									<span class="icon is-small is-left">
+										<i class="fas fa-hashtag"></i>
+									</span>
+								</div>
+								{#if firstFieldError(fieldErrors, 'folio')}
+									<p class="help is-danger">{firstFieldError(fieldErrors, 'folio')}</p>
+								{/if}
+							</div>
+						</div>
+						<div class="column is-3">
 							<div class="field">
 								<label class="label">Docente</label>
 								<div class="control">
@@ -508,7 +527,7 @@
 							</div>
 						</div>
 
-						<div class="column is-4">
+						<div class="column is-3">
 							<div class="field">
 								<label class="label">Tipo de Comisión</label>
 								<div class="control">
@@ -554,7 +573,7 @@
 							</div>
 						</div>
 
-						<div class="column is-4">
+						<div class="column is-3">
 							<div class="field">
 								<label class="label">Lugar</label>
 								<div class="control">
@@ -739,9 +758,10 @@
 							<td>
 								<div class="select is-small is-fullwidth">
 									<select bind:value={filters.estado}>
-										<option value="">Todos</option>
-										<option value="PENDIENTE">Pendiente</option>
-										<option value="COMPLETADA">Completada</option>
+										<option value="">TODOS</option>
+										<option value="PENDIENTE">PENDIENTE</option>
+										<option value="FINALIZADA">FINALIZADA</option>
+										<option value="EN_PROCESO">EN_PROCESO</option>
 									</select>
 								</div>
 							</td>
@@ -774,9 +794,11 @@
 								<td>{comision.lugar?.descripcion}</td>
 								<td>
 									<span
-										class="tag {comision.estado === 'COMPLETADA' ? 'is-success' : 'is-warning'}"
+										class="badge {comision.estadoCalculado === 'FINALIZADA'
+											? 'bg-red'
+											: 'bg-green'}"
 									>
-										{comision.estado || 'Pendiente'}
+										{comision.estadoCalculado}
 									</span>
 								</td>
 							</tr>

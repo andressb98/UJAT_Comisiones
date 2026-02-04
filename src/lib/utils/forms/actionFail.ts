@@ -1,4 +1,5 @@
 import type { SubmitFunction } from "@sveltejs/kit";
+import type { ActionResult } from "@sveltejs/kit";
 
 export type ZodFlattened = {
   formErrors: string[];
@@ -75,7 +76,7 @@ export function extractEnhanceState(result: unknown): EnhanceState {
  * You can reuse it across pages and pass what to do on success/failure.
  */
 export function buildEnhanceHandler(opts: {
-  onSuccess?: () => void;
+  onSuccess?: (result: ActionResult) => void;
   onFailure?: (state: EnhanceFailState) => void;
   clear?: () => void; // called before submit
 }): SubmitFunction {
@@ -86,7 +87,7 @@ export function buildEnhanceHandler(opts: {
       const state = extractEnhanceState(result);
 
       if (state.ok) {
-        opts.onSuccess?.();
+        opts.onSuccess?.(result);
       } else {
         opts.onFailure?.(state);
       }
