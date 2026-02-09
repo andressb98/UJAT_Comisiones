@@ -187,6 +187,13 @@
 		XLSX.utils.book_append_sheet(wb, ws, 'Docentes');
 		XLSX.writeFile(wb, 'Reporte_Docentes.xlsx');
 	}
+
+	//Helpers de errores para debbug
+
+	const hasFieldError = (errors: Record<string, string[] | undefined>, field: string) =>
+		errors[field]?.length;
+	const firstFieldError = (errors: Record<string, string[] | undefined>, field: string) =>
+		errors[field]?.[0];
 </script>
 
 <section class="section">
@@ -302,10 +309,9 @@
 									<label class="label">Clave (cveProf)</label>
 									<div class="control">
 										<input
-											class="input"
+											class="input {hasFieldError(fieldErrors, 'clave')}"
 											name="cveProf"
 											bind:value={cveProf}
-											disabled={mode === 'edit'}
 											placeholder="Ej: 202H17041"
 										/>
 									</div>

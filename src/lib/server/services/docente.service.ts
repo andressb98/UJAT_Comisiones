@@ -84,11 +84,22 @@ export const docentesService = {
     });
   },
 
-  async update(id: number, data: DocenteUpdateInput, ctx: AuditCtx) {
+  async update(cveProf: string, data: any, ctx: AuditCtx) {
+
     return prisma.$transaction(async (tx) => {
       const updated = await tx.docente.update({
-        where: { id },
-        data,
+        where: { cveProf },
+        data: {
+          gradoPrefijo: data.gradoPrefijo,
+          nombreProf: data.nombreProf,
+          apePatProf: data.apePatProf,
+          apeMatProf: data.apeMatProf,
+          correoProf: data.correoProf,
+          areaConProf: data.areaConProf,
+          gradoEspecialidad: data.gradoEspecialidad,
+          contratoProf: data.contratoProf,
+          cateProf: data.cateProf
+        },
       });
 
       await tx.bitacora.create({

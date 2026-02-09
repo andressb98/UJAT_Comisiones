@@ -42,7 +42,6 @@ async function generateUniqueClave(nombre: string) {
 }
 
 export const load: PageServerLoad = async ({ url, locals }) => {
-  // Si necesitas permisos/usuario aquí, ya lo tienes en locals (según tu hook)
   const q = url.searchParams.get("q") ?? "";
   const includeInactive = url.searchParams.get("all") === "1";
 

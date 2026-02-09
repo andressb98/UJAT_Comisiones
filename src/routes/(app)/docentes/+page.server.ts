@@ -6,6 +6,7 @@ import { docentesService } from "$lib/server/services/docente.service";
 
 import { getAuditCtx } from "$lib/server/audit/auditContext";
 import { prisma } from "$lib/server/prisma";
+import { id } from "zod/locales";
 
 function normalizeOptional(s: unknown) {
   const v = typeof s === "string" ? s.trim() : "";
@@ -22,7 +23,7 @@ export const load: PageServerLoad = async ({ url, parent, locals }) => {
   const q = url.searchParams.get("q") ?? "";
   const includeInactive = url.searchParams.get("all") === "1";
   const divisionIdParam = url.searchParams.get("divisionId");
-  const divisionId = locals.division?.id ;
+  const divisionId = locals.division?.id;
   console.log("LOAD docentes HIT ✅");
   console.log({ q, includeInactive, divisionId });
 
@@ -97,31 +98,34 @@ export const actions: Actions = {
     const ctx = getAuditCtx(event);
     if (!ctx) return fail(401, { message: "No autorizado" });
 
+    console.log("Datos recibidos para la actualizacion:", raw);
+
+
     const parsed = docenteUpdateSchema.safeParse(raw);
     if (!parsed.success) {
+      console.log("eSTA LLEGANDO HASTA AQUI");
+
       return fail(400, { message: "Datos inválidos", issues: parsed.error.flatten() });
     }
 
-    await docentesService.update(
-      parsed.data.id,
-      {
-        divisionId: parsed.data.divisionId,
+    console.log("sI ESTA LEGANDO HASTA AQUI");
 
-        areaConProf: normalizeOptional(parsed.data.areaConProf),
-        gradoPrefijo: normalizeOptional(parsed.data.gradoPrefijo),
-        gradoEspecialidad: normalizeOptional(parsed.data.gradoEspecialidad),
+    await docentesService.update(parsed.data.cveProf, {
+      divisionId: parsed.data.divisionId,
 
-        nombreProf: parsed.data.nombreProf.trim(),
-        apePatProf: parsed.data.apePatProf.trim(),
-        apeMatProf: normalizeOptional(parsed.data.apeMatProf),
+      areaConProf: normalizeOptional(parsed.data.areaConProf),
+      gradoPrefijo: normalizeOptional(parsed.data.gradoPrefijo),
+      gradoEspecialidad: normalizeOptional(parsed.data.gradoEspecialidad),
 
-        contratoProf: normalizeOptional(parsed.data.contratoProf),
-        cateProf: normalizeOptional(parsed.data.cateProf),
-        correoProf: normalizeOptional(parsed.data.correoProf),
-      },
-      ctx
-    );
+      nombreProf: parsed.data.nombreProf.trim(),
+      apePatProf: parsed.data.apePatProf.trim(),
+      apeMatProf: normalizeOptional(parsed.data.apeMatProf),
 
+      contratoProf: normalizeOptional(parsed.data.contratoProf),
+      cateProf: normalizeOptional(parsed.data.cateProf),
+      correoProf: normalizeOptional(parsed.data.correoProf),
+    }, ctx);
+    console.log("Esta llegadno aqui esta fallando")
     return { ok: true };
   },
 
