@@ -1,23 +1,40 @@
-import {json, error} from '@sveltejs/kit';
+import { json, error } from '@sveltejs/kit';
 import { getAuditCtx } from '$lib/server/audit/auditContext';
-import { docentesService } from '$lib/server/services/docentes.service';
+import { docentesService } from '$lib/server/services/docente.service.js';
 import { tiposComisionService } from '$lib/server/services/tipoComision.service';
 import { lugaresService } from '$lib/server/services/lugar.service';
-import { unidadesService } from '$lib/server/services/unidad.service';
-import { divisionesService } from '$lib/server/services/division.service';
+import { unidadAdministrativaService } from '$lib/server/services/unidadAdministrativa.service.js'; // Ajustado el nombre según tu export
+import { divisionService } from '$lib/server/services/division.services.js';
 
 export const GET = async (event) => {
-    const {params} = event;
     const ctx = getAuditCtx(event);
-    if (!ctx) throw error (401, "No autorizado");
+    if (!ctx) throw error(401, "No autorizado");
 
-    try{
+    try {
+        const [
+            docentes,
+            tipos,
+            lugares,
+            unidades,
+            divisiones
+        ] = await Promise.all([
+            docentesService.list({}),
+            tiposComisionService.list({}),
+            lugaresService.list({}),
+            unidadAdministrativaService.list({}, ctx), 
+            divisionService.list({})
+        ]);
 
-        const docente = await docentesService.list();
-        const tipoComision = await tiposComisionService.list();
+        return json({
+            docentes,
+            tipos,
+            lugares,
+            unidades,
+            divisiones
+        });
 
-    }catch(error: any){
-        console.error(error);
-        throw error(404, error.message || "Fallo algo pa");
+    } catch (err: any) {
+        console.error("Error en API filtros-comisiones:", err);
+        throw error(500, err.message || "Error interno del servidor");
     }
-}
+};

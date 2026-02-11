@@ -98,17 +98,12 @@ export const actions: Actions = {
     const ctx = getAuditCtx(event);
     if (!ctx) return fail(401, { message: "No autorizado" });
 
-    console.log("Datos recibidos para la actualizacion:", raw);
-
-
     const parsed = docenteUpdateSchema.safeParse(raw);
     if (!parsed.success) {
-      console.log("eSTA LLEGANDO HASTA AQUI");
 
       return fail(400, { message: "Datos inválidos", issues: parsed.error.flatten() });
     }
 
-    console.log("sI ESTA LEGANDO HASTA AQUI");
 
     await docentesService.update(parsed.data.cveProf, {
       divisionId: parsed.data.divisionId,

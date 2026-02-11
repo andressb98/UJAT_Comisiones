@@ -1,7 +1,7 @@
 import { prisma } from "$lib/server/prisma";
 import { TipoMovimientoBitacora } from "@prisma/client";
 import type { AuditCtx } from "./bitacora.service";
-import { generateUniqueClave } from "$lib/utils/clave"; // Asegúrate de importar la función
+import { generateUniqueClave } from "$lib/utils/clave"; 
 import { bitacoraService } from "./bitacora.service";
 import { parse } from "path";
 
@@ -9,7 +9,6 @@ import { parse } from "path";
 
 export const comisionesService = {
 
-    // Función auxiliar interna para verificar disponibilidad
     async checkDisponibilidad(tx: any, params: { docenteId: number; fechaInicio: Date; fechaFin: Date; excludeId?: number }) {
         const { docenteId, fechaInicio, fechaFin, excludeId } = params;
 
@@ -104,7 +103,6 @@ export const comisionesService = {
         });
     },
 
-    // 2. NUEVA FUNCIÓN: Obtener una comisión por ID con toda su información
     async getById(id: number) {
         const comision = await prisma.comision.findUnique({
             where: { id },
@@ -126,45 +124,64 @@ export const comisionesService = {
         return comision;
     },
 
-    // 3. MÉTODO MODIFICADO: Se eliminó el parámetro idComision
     async list(params: {
         q?: string;
-        includeInactive?: boolean;
-        division: number
+        docenteId?: number;
+        tipoComisionId?: number;
+        lugarId?: number;
+        fechaInicio?: string;
+        fechaFin?: string;
+        unidadId?: number;
+        divisionId?: number;
+        estado?: string; // PENDIENTE, EN_PROCESO, FINALIZADA
     }) {
-        const q = params.q?.trim();
-        const includeInactive = Boolean(params.includeInactive);
-        const divisionId = params.division;
         const hoy = new Date();
 
+        // Construcción dinámica del filtro 'where'
+        const where: any = {
+            ...(params.divisionId ? { divisionId: params.divisionId } : {}),
+            ...(params.unidadId ? { unidadAdministrativaId: params.unidadId } : {}),
+            ...(params.tipoComisionId ? { tipoComisionId: params.tipoComisionId } : {}),
+            ...(params.lugarId ? { lugarId: params.lugarId } : {}),
+
+            // Filtro por Docente (Relación Many-to-Many)
+            ...(params.docenteId ? {
+                docentesComision: {
+                    some: { docenteId: params.docenteId }
+                }
+            } : {}),
+
+            // Filtro por Rango de Fechas
+            ...(params.fechaInicio || params.fechaFin ? {
+                AND: [
+                    params.fechaInicio ? { fechaInicio: { gte: new Date(params.fechaInicio) } } : {},
+                    params.fechaFin ? { fechaFin: { lte: new Date(params.fechaFin) } } : {}
+                ]
+            } : {}),
+
+            ...(params.q ? {
+                OR: [
+                    { claveComision: { contains: params.q, mode: 'insensitive' } },
+                    { folio: { contains: params.q, mode: 'insensitive' } },
+                    { observaciones: { contains: params.q, mode: 'insensitive' } },
+                ]
+            } : {})
+        };
+
         const comisiones = await prisma.comision.findMany({
-            where: {
-                divisionId: divisionId,
-                ...(includeInactive ? {} : { estatus: "ACTIVA" }),
-                ...(q ? {
-                    OR: [
-                        { claveComision: { contains: q } },
-                        { observaciones: { contains: q } },
-                    ],
-                } : {}),
-            },
+            where,
             orderBy: { creadoEn: "desc" },
             include: {
                 tipoComision: true,
                 lugar: true,
-                docentesComision: {
-                    include: {
-                        docente: true
-                    }
-                }
+                unidadAdministrativa: true,
+                division: true,
+                docentesComision: { include: { docente: true } }
             },
         });
 
-        // Transformamos los resultados para añadir la lógica de negocio
-        return comisiones.map(comision => {
+        let resultados = comisiones.map(comision => {
             let estadoTemporal = "PENDIENTE";
-
-            // Asumiendo que tienes campos 'fechaInicio' y 'fechaFin' en tu esquema
             const inicio = new Date(comision.fechaInicio);
             const fin = new Date(comision.fechaFin || comision.fechaInicio);
 
@@ -174,11 +191,14 @@ export const comisionesService = {
                 estadoTemporal = "EN_PROCESO";
             }
 
-            return {
-                ...comision,
-                estadoCalculado: estadoTemporal // Esta propiedad la usas en tu frontend
-            };
+            return { ...comision, estadoCalculado: estadoTemporal };
         });
+
+        if (params.estado) {
+            resultados = resultados.filter(r => r.estadoCalculado === params.estado);
+        }
+
+        return resultados;
     },
 
     async update(id: number, data: any, ctx: AuditCtx) {
