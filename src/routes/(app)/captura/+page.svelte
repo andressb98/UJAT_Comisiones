@@ -786,9 +786,9 @@
 								</td>
 								<td>{comision.tipoComision?.nombre}</td>
 								<td>
-									{new Date(comision.fechaInicio).toLocaleDateString()}
+									{new Date(comision.fechaInicio).toLocaleDateString('es-MX', { timeZone: 'UTC' })}
 									{#if comision.fechaFin}
-										- {new Date(comision.fechaFin).toLocaleDateString()}
+										- {new Date(comision.fechaFin).toLocaleDateString('es-MX', { timeZone: 'UTC' })}
 									{/if}
 								</td>
 								<td>{comision.lugar?.descripcion}</td>
