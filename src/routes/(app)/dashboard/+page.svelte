@@ -3,8 +3,9 @@
     import { toast } from 'svelte-sonner';
     import { page } from '$app/stores';
     import { onMount } from 'svelte';
+    import Chart from 'chart.js/auto'; // <-- Importación mágica de Chart.js
 
-    // Props de datos (Cascarón vacío según lo solicitado)
+    // Props de datos con la nueva estructura de las gráficas
     export let data: {
         stats: {
             activasHoy: number;
@@ -15,23 +16,70 @@
         };
         lineaTiempo: any[];
         proximasComisiones: any[];
+        chartTipo: { labels: string[], data: number[] };
+        chartDocente: { labels: string[], data: number[] };
     };
 
     // Estado de filtros
     let periodoSeleccionado = 'mes';
     
-    // Referencias para gráficas (Cascarón)
-    let chartTipoContainer: HTMLElement;
-    let chartDocenteContainer: HTMLElement;
-    let chartTendenciaContainer: HTMLElement;
+    // Referencias exclusivas para los <canvas>
+    let canvasTipo: HTMLCanvasElement;
+    let canvasDocente: HTMLCanvasElement;
 
-    // Función para ver detalle (Consistente con tu lógica de selectedId)
+    // Instancias de Chart.js para poder destruirlas después
+    let chartTipoInstance: Chart;
+    let chartDocenteInstance: Chart;
+
+    // Función para ver detalle
     function verDetalle(clave: string) {
         toast.info(`Cargando detalle de: ${clave}`);
     }
 
     onMount(() => {
-        // Aquí iría la inicialización de tus librerías de gráficas (Chart.js/ApexCharts)
+        // Gráfica: Distribución por Tipo (Doughnut)
+        if (canvasTipo && data.chartTipo?.labels.length > 0) {
+            chartTipoInstance = new Chart(canvasTipo, {
+                type: 'doughnut',
+                data: {
+                    labels: data.chartTipo.labels,
+                    datasets: [{
+                        data: data.chartTipo.data,
+                        backgroundColor: ['#00d1b2', '#3273dc', '#ffdd57', '#f14668', '#48c774'],
+                        borderWidth: 0
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+        }
+
+        // Gráfica: Top Docentes (Barra)
+        if (canvasDocente && data.chartDocente?.labels.length > 0) {
+            chartDocenteInstance = new Chart(canvasDocente, {
+                type: 'bar',
+                data: {
+                    labels: data.chartDocente.labels,
+                    datasets: [{
+                        label: 'Comisiones',
+                        data: data.chartDocente.data,
+                        backgroundColor: '#3273dc',
+                        borderRadius: 4
+                    }]
+                },
+                options: { 
+                    responsive: true, 
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } }, // Ocultamos la leyenda para más limpieza
+                    scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+                }
+            });
+        }
+
+        // Limpieza fundamental para Svelte
+        return () => {
+            if (chartTipoInstance) chartTipoInstance.destroy();
+            if (chartDocenteInstance) chartDocenteInstance.destroy();
+        };
     });
 </script>
 
@@ -112,13 +160,17 @@
                     <div class="column">
                         <div class="box">
                             <p class="has-text-weight-semibold mb-3">Distribución por Tipo</p>
-                            <div bind:this={chartTipoContainer} class="chart-placeholder"></div>
+                            <div style="position: relative; height: 250px; width: 100%;">
+                                <canvas bind:this={canvasTipo}></canvas>
+                            </div>
                         </div>
                     </div>
                     <div class="column">
                         <div class="box">
                             <p class="has-text-weight-semibold mb-3">Top Docentes</p>
-                            <div bind:this={chartDocenteContainer} class="chart-placeholder"></div>
+                            <div style="position: relative; height: 250px; width: 100%;">
+                                <canvas bind:this={canvasDocente}></canvas>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -170,23 +222,7 @@
 </section>
 
 <style>
-    /* Estilos base para coherencia con tu UI */
-    .chart-placeholder {
-        min-height: 250px;
-        width: 100%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background: #f9f9f9;
-        border: 1px dashed #ccc;
-        border-radius: 8px;
-    }
-
-    .chart-placeholder::after {
-        content: 'Espacio para gráfica';
-        color: #999;
-        font-size: 0.8rem;
-    }
+    /* Se eliminaron las clases .chart-placeholder porque ya no se usan */
 
     .shadow-sm {
         box-shadow: 0 2px 8px rgba(0,0,0,0.05);

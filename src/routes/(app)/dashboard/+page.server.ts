@@ -22,6 +22,10 @@ export const load: PageServerLoad = async ({ locals }) => {
     const lugaresUnicos = new Set();
     const proximasComisiones: any[] = [];
     const lineaTiempo: any[] = [];
+    
+    // --> NUEVO: Diccionarios para Chart.js
+    const conteoTipos: Record<string, number> = {};
+    const conteoDocentes: Record<string, number> = {};
 
     // 4. Procesar todo en un solo ciclo (O(n))
     comisionesMes.forEach(c => {
@@ -33,7 +37,7 @@ export const load: PageServerLoad = async ({ locals }) => {
             activasHoy++;
         }
 
-        // b) ¿Está cancelada? (Ajusta 'estatus' según tu esquema de Prisma)
+        // b) ¿Está cancelada?
         if (c.estatus === 'CANCELADA') {
             canceladas++;
         }
@@ -41,6 +45,16 @@ export const load: PageServerLoad = async ({ locals }) => {
         // c) Contar docentes y lugares únicos usando Set()
         if (c.lugarId) lugaresUnicos.add(c.lugarId);
         c.docentesComision.forEach(dc => docentesUnicos.add(dc.docenteId));
+
+        // --> NUEVO: Contar para la gráfica de Tipos (Doughnut)
+        const tipo = c.tipoComision?.nombre || 'General';
+        conteoTipos[tipo] = (conteoTipos[tipo] || 0) + 1;
+
+        // --> NUEVO: Contar para la gráfica de Docentes (Barra)
+        c.docentesComision.forEach(dc => {
+            const nombreDocente = dc.docente?.nombreProf || 'Desconocido';
+            conteoDocentes[nombreDocente] = (conteoDocentes[nombreDocente] || 0) + 1;
+        });
 
         // d) Próximas comisiones (inician en el futuro, máximo 5)
         if (inicio > hoy && proximasComisiones.length < 5) {
@@ -54,10 +68,10 @@ export const load: PageServerLoad = async ({ locals }) => {
             });
         }
 
-        // e) Línea de tiempo (puedes usar la fecha de creación 'creadoEn')
+        // e) Línea de tiempo
         if (lineaTiempo.length < 5) {
             lineaTiempo.push({
-                estatus: c.estadoCalculado, // Para la clase CSS (ej. pendiente, en_proceso)
+                estatus: c.estadoCalculado,
                 rangoFechas: `${inicio.toLocaleDateString('es-MX', {timeZone:'UTC'})}`,
                 rangoHoras: `${c.horaInicio || ''} - ${c.horaFin || ''}`,
                 tipo: c.tipoComision?.nombre,
@@ -67,9 +81,14 @@ export const load: PageServerLoad = async ({ locals }) => {
         }
     });
 
-    // 5. Cálculo final de porcentajes
+    // 5. Cálculos Finales y Ordenamiento
     const total = comisionesMes.length;
     const porcentajeCanceladas = total > 0 ? Math.round((canceladas / total) * 100) : 0;
+
+    // --> NUEVO: Extraer solo el Top 5 de docentes con más comisiones
+    const topDocentes = Object.entries(conteoDocentes)
+        .sort((a, b) => b[1] - a[1]) 
+        .slice(0, 5); 
 
     // 6. Retornar exactamente lo que espera tu +page.svelte
     return {
@@ -81,6 +100,15 @@ export const load: PageServerLoad = async ({ locals }) => {
             porcentajeCanceladas
         },
         proximasComisiones,
-        lineaTiempo
+        lineaTiempo,
+        // --> NUEVO: Data formateada para Chart.js
+        chartTipo: {
+            labels: Object.keys(conteoTipos),
+            data: Object.values(conteoTipos)
+        },
+        chartDocente: {
+            labels: topDocentes.map(d => d[0]),
+            data: topDocentes.map(d => d[1])
+        }
     };
 };
