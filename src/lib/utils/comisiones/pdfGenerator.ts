@@ -8,7 +8,7 @@ export const generarPdfComision = async (id: number) => {
         const { default: autoTable } = await import('jspdf-autotable');
 
         const doc = new jsPDF();
-        const marginX = 25; // Margen izquierdo tipo oficio
+        const marginX = 25; 
         let currentY = 20;
 
         // --- ENCABEZADO ---
@@ -36,7 +36,6 @@ export const generarPdfComision = async (id: number) => {
         currentY = 95;
         const textoCuerpo = `Comunico a usted que se le ha comisionado para colaborar en el ${comision.tipoComision.nombre}, para alumnos de nuevo ingreso al ciclo escolar (${comision.ciclo || '2025'}), en las actividades de ${comision.lugar.descripcion}, de acuerdo al siguiente calendario:`;
         
-        // El método splitTextToSize ayuda a ajustar el texto al ancho del papel
         const splitText = doc.splitTextToSize(textoCuerpo, 160);
         doc.text(splitText, marginX, currentY);
 

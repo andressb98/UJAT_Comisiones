@@ -5,7 +5,7 @@
 	import { hasFieldError, firstFieldError } from '$lib/utils/forms/field';
 	import { invalidateAll } from '$app/navigation';
 	import { toast } from 'svelte-sonner';
-
+	import BotonExportar from '$lib/components/botones/BotonExportar.svelte';
 	import { hasPermiso } from '$lib/utils/permisos';
 
 	export let data: {
@@ -162,6 +162,11 @@
 						</button>
 					</form>
 				{/if}
+				<BotonExportar
+					dataToExport={data.lugares}
+					filename="lugares_ujat"
+					title="Listado de Lugares"
+				/>
 			</div>
 
 			<!-- Form colapsable -->

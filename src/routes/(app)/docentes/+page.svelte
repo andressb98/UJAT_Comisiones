@@ -3,11 +3,10 @@
 	import { invalidateAll } from '$app/navigation';
 	import { toast } from 'svelte-sonner';
 	import { page } from '$app/stores';
-	import * as XLSX from 'xlsx';
-
 	import FormAlert from '$lib/components/forms/FormAlert.svelte';
 	import { buildEnhanceHandler, type EnhanceFailState } from '$lib/utils/forms/actionFail';
 	import { hasPermiso } from '$lib/utils/permisos';
+	import BotonExportar from '$lib/components/botones/botonExportar.svelte';
 
 	export let data: {
 		docentes: any[];
@@ -173,20 +172,6 @@
 		return parts.join(' ');
 	}
 
-	function exportarAExcel() {
-		const datos = data.docentes.map((d) => ({
-			Clave: d.cveProf,
-			Nombre: fullName(d),
-			División: d.division?.descripcion ?? d.division?.clave ?? '-',
-			Correo: d.correoProf ?? '-',
-			Estado: d.activo === false ? 'Inactivo' : 'Activo'
-		}));
-
-		const wb = XLSX.utils.book_new();
-		const ws = XLSX.utils.json_to_sheet(datos);
-		XLSX.utils.book_append_sheet(wb, ws, 'Docentes');
-		XLSX.writeFile(wb, 'Reporte_Docentes.xlsx');
-	}
 
 	//Helpers de errores para debbug
 
@@ -249,17 +234,6 @@
 
 			<!-- Botones -->
 			<div class="is-flex is-justify-content-flex-end gap-2">
-				<button
-					class="button is-success is-light"
-					type="button"
-					on:click={exportarAExcel}
-					disabled={data.docentes.length === 0}
-				>
-					<span class="icon">
-						<i class="fas fa-file-excel"></i>
-					</span>
-					<span>Exportar Excel</span>
-				</button>
 				{#if hasPermiso(permisos, 'DOCENTES_CREAR')}
 					<button class="button is-primary" type="button" on:click={openCreate}>Agregar</button>
 				{/if}
@@ -278,6 +252,12 @@
 						</button>
 					</form>
 				{/if}
+				<BotonExportar
+					dataToExport={data.docentes}
+					filename="docentes_ujat"
+					title="Listado de Docentes"
+				/>
+
 			</div>
 
 			<!-- Form colapsable -->

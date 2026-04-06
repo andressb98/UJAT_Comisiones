@@ -6,6 +6,7 @@
 	import { buildEnhanceHandler, type EnhanceFailState } from '$lib/utils/forms/actionFail';
 	import { hasFieldError, firstFieldError } from '$lib/utils/forms/field';
 	import { hasPermiso } from '$lib/utils/permisos';
+	import BotonExportar from '$lib/components/botones/BotonExportar.svelte';
 
 	export let data: {
 		tiposComision: any[];
@@ -153,6 +154,11 @@
 						</button>
 					</form>
 				{/if}
+				<BotonExportar
+					dataToExport={data.tiposComision}
+					filename="tipos_comision_ujat"
+					title="Listado de Tipos de Comisión"
+				/>
 			</div>
 
 			<!-- Form colapsable -->

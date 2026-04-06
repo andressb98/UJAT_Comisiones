@@ -5,7 +5,7 @@
 	import { hasFieldError, firstFieldError } from '$lib/utils/forms/field';
 	import { invalidateAll } from '$app/navigation';
 	import { page } from '$app/stores';
-
+	import BotonExportar from '$lib/components/botones/botonExportar.svelte';
 	import { hasPermiso } from '$lib/utils/permisos';
 	import ModalCrearDivisionRapida from '$lib/components/modales/ModalCrearDivisionRapida.svelte';
 	import type { SubmitFunction } from '@sveltejs/kit';
@@ -181,6 +181,11 @@
 						>Editar</button
 					>
 				{/if}
+				<BotonExportar
+					dataToExport={data.unidades}
+					filename="unidades_ujat"
+					title="Listado de Unidades Administrativas"
+				/>
 			</div>
 
 			<!-- Form colapsable -->

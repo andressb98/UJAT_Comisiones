@@ -19,7 +19,7 @@
 	let docentes: any[] = [];
 	let tiposComisiones: any[] = [];
 	let lugares: any[] = [];
-	let estados = ['PENDIENTE', 'EN_PROCESO', 'FINALIZADA']; 
+	let estados = ['PENDIENTE', 'EN_PROCESO', 'FINALIZADA'];
 	let unidades: any[] = [];
 	let divisiones: any[] = [];
 
@@ -268,7 +268,7 @@
 					</div>
 				</div>
 
-				<div class="column is-4 is-flex is-align-items-flex-end">
+				<div class="column is-12 is-flex is-align-items-flex-end is-justify-content-flex-end">
 					<div class="buttons">
 						<button class="button is-info is-small" on:click={applyFilters}>
 							<span class="icon"><i class="fas fa-search"></i></span>
