@@ -16,9 +16,12 @@ export type BitacoraLogInput = {
 };
 
 export const bitacoraService = {
-  async log(ctx: AuditCtx, input: BitacoraLogInput) {
-    // Si no hay usuarioId, preferible NO registrar (o lanzar error) dependiendo tu política.
-    return prisma.bitacora.create({
+  async log(ctx: AuditCtx, input: BitacoraLogInput, tx: any = prisma) {
+    if (!ctx.usuarioId) {
+      throw new Error("No se puede registrar en bitácora sin un usuarioId");
+    }
+
+    return tx.bitacora.create({
       data: {
         usuarioId: ctx.usuarioId,
         ipOrigen: ctx.ipOrigen ?? null,
