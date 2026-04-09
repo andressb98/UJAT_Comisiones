@@ -88,16 +88,12 @@ export const comisionesService = {
             });
 
             // 6. Bitácora (se mantiene igual)
-            await tx.bitacora.create({
-                data: {
-                    usuarioId: ctx.usuarioId,
-                    ipOrigen: ctx.ipOrigen ?? null,
-                    tipoMovimiento: TipoMovimientoBitacora.CREAR,
-                    tablaAfectada: "Comision",
-                    registroId: createdComision.id,
-                    descripcion: `Creó comision con folio ${nuevoFolioGenerado}`,
-                },
-            });
+            await bitacoraService.log(ctx, {
+                tipoMovimiento: TipoMovimientoBitacora.CREAR,
+                tablaAfectada: "Comision",
+                registroId: createdComision.id,
+                descripcion: `Creó nueva comisión ${createdComision.claveComision} (${nuevoFolioGenerado})`,
+            }, tx);
 
             return { id: createdComision.id };
         });
@@ -231,16 +227,12 @@ export const comisionesService = {
                 },
             });
 
-            await tx.bitacora.create({
-                data: {
-                    usuarioId: ctx.usuarioId,
-                    ipOrigen: ctx.ipOrigen ?? null,
-                    tipoMovimiento: TipoMovimientoBitacora.ACTUALIZAR,
-                    tablaAfectada: "Comision",
-                    registroId: updatedComision.id,
-                    descripcion: `Actualizó comision ${updatedComision.claveComision}`,
-                },
-            });
+            await bitacoraService.log(ctx, {
+                tipoMovimiento: TipoMovimientoBitacora.ACTUALIZAR,
+                tablaAfectada: "Comision",
+                registroId: updatedComision.id,
+                descripcion: `Actualizó comisión ${updatedComision.claveComision}`,
+            }, tx);
 
             return updatedComision;
         });

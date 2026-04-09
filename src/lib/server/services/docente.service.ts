@@ -1,20 +1,17 @@
 import { prisma } from "$lib/server/prisma";
 import type { AuditCtx } from "./bitacora.service";
 import { TipoMovimientoBitacora } from "@prisma/client";
+import { bitacoraService } from "./bitacora.service";
 
 type DocenteCreateInput = {
   cveProf: string;
-
   divisionId: number;
-
   areaConProf?: string | null;
   gradoPrefijo?: string | null;
   gradoEspecialidad?: string | null;
-
   nombreProf: string;
   apePatProf: string;
   apeMatProf?: string | null;
-
   contratoProf?: string | null;
   cateProf?: string | null;
   correoProf?: string | null;
@@ -31,23 +28,20 @@ export const docentesService = {
     return prisma.docente.findMany({
       where: {
         ...(params.division ? { divisionId: params.division } : {}),
-
         ...(includeInactive ? {} : { activo: true }),
-
-        ...(q
-          ? {
-            OR: [
-              { cveProf: { contains: q } },
-              { nombreProf: { contains: q } },
-              { apePatProf: { contains: q } },
-              { apeMatProf: { contains: q } },
-              { correoProf: { contains: q } },
-              { gradoPrefijo: { contains: q } },
-              { gradoEspecialidad: { contains: q } },
-              { areaConProf: { contains: q } },
-              { division: { descripcion: { contains: q } } },
-            ],
-          }
+        ...(q ? {
+          OR: [
+            { cveProf: { contains: q } },
+            { nombreProf: { contains: q } },
+            { apePatProf: { contains: q } },
+            { apeMatProf: { contains: q } },
+            { correoProf: { contains: q } },
+            { gradoPrefijo: { contains: q } },
+            { gradoEspecialidad: { contains: q } },
+            { areaConProf: { contains: q } },
+            { division: { descripcion: { contains: q } } },
+          ],
+        }
           : {}),
       },
       include: {
@@ -69,23 +63,18 @@ export const docentesService = {
     return prisma.$transaction(async (tx) => {
       const created = await tx.docente.create({ data });
 
-      await tx.bitacora.create({
-        data: {
-          usuarioId: ctx.usuarioId,
-          ipOrigen: ctx.ipOrigen ?? null,
-          tipoMovimiento: TipoMovimientoBitacora.CREAR,
-          tablaAfectada: "Docente",
-          registroId: created.id,
-          descripcion: `Creó docente ${created.cveProf} (${created.nombreProf} ${created.apePatProf})`,
-        },
-      });
+      await bitacoraService.log(ctx, {
+        tipoMovimiento: TipoMovimientoBitacora.CREAR,
+        tablaAfectada: "Docente",
+        registroId: created.id,
+        descripcion: `Creó nuevo docente ${created.cveProf} - ${created.nombreProf}`,
+      }, tx);
 
       return created;
     });
   },
 
   async update(cveProf: string, data: any, ctx: AuditCtx) {
-
     return prisma.$transaction(async (tx) => {
       const updated = await tx.docente.update({
         where: { cveProf },
@@ -102,16 +91,12 @@ export const docentesService = {
         },
       });
 
-      await tx.bitacora.create({
-        data: {
-          usuarioId: ctx.usuarioId,
-          ipOrigen: ctx.ipOrigen ?? null,
+        await bitacoraService.log(ctx, {
           tipoMovimiento: TipoMovimientoBitacora.ACTUALIZAR,
           tablaAfectada: "Docente",
           registroId: updated.id,
-          descripcion: `Actualizó docente ${updated.cveProf}`,
-        },
-      });
+          descripcion: `Actualizó docente ${updated.cveProf} - ${updated.nombreProf}`,
+        }, tx);
 
       return updated;
     });
@@ -131,20 +116,14 @@ export const docentesService = {
         select: { id: true, cveProf: true, activo: true },
       });
 
-      await tx.bitacora.create({
-        data: {
-          usuarioId: ctx.usuarioId,
-          ipOrigen: ctx.ipOrigen ?? null,
-          tipoMovimiento: TipoMovimientoBitacora.ACTUALIZAR,
-          tablaAfectada: "Docente",
-          registroId: updated.id,
-          descripcion: `${updated.activo ? "Activó" : "Desactivó"} docente ${updated.cveProf}`,
-        },
-      });
+      await bitacoraService.log(ctx, {
+        tipoMovimiento: TipoMovimientoBitacora.ACTUALIZAR,
+        tablaAfectada: "Docente",
+        registroId: updated.id,
+        descripcion: `${updated.activo ? "Activó" : "Desactivó"} docente ${updated.cveProf}`,
+      }, tx);
 
       return updated;
     });
   },
 };
-
-

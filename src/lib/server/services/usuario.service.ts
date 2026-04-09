@@ -2,6 +2,7 @@ import { prisma } from "$lib/server/prisma";
 import type { AuditCtx } from "./bitacora.service";
 import { TipoMovimientoBitacora } from "@prisma/client";
 import bcrypt from "bcryptjs";
+import { bitacoraService } from "./bitacora.service";
 
 
 type UsuarioCreateInput = {
@@ -119,16 +120,12 @@ export const usuarioService = {
                 });
             }
 
-            await tx.bitacora.create({
-                data: {
-                    usuarioId: ctx.usuarioId,
-                    ipOrigen: ctx.ipOrigen ?? null,
-                    tipoMovimiento: TipoMovimientoBitacora.CREAR,
-                    tablaAfectada: "Docente",
-                    registroId: usuario.id,
-                    descripcion: `Creó docente ${usuario.nombre} (${usuario.correo})`,
-                },
-            });
+            await bitacoraService.log(ctx, {
+                tipoMovimiento: TipoMovimientoBitacora.CREAR,
+                tablaAfectada: "Usuario",
+                registroId: usuario.id,
+                descripcion: `Creó nuevo usuario ${usuario.nombre} (${usuario.correo}) con rol ${rol.codigo}`,
+            }, tx);
 
             return usuario;
         });
@@ -141,16 +138,13 @@ export const usuarioService = {
                 data,
             });
 
-            await tx.bitacora.create({
-                data: {
-                    usuarioId: ctx.usuarioId,
-                    ipOrigen: ctx.ipOrigen ?? null,
-                    tipoMovimiento: TipoMovimientoBitacora.ACTUALIZAR,
-                    tablaAfectada: "Usuario",
-                    registroId: updated.id,
-                    descripcion: `Actualizó usuario ${updated.nombre} (${updated.correo})`,
-                },
-            });
+            await bitacoraService.log(ctx, {
+                tipoMovimiento: TipoMovimientoBitacora.ACTUALIZAR,
+                tablaAfectada: "Usuario",
+                registroId: updated.id,
+                descripcion: `Actualizó usuario ${updated.nombre} (${updated.correo})`,
+            }, tx);
+
 
             return updated;
         });

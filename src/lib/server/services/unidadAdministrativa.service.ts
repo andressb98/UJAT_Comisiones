@@ -1,7 +1,7 @@
 import { prisma } from "$lib/server/prisma";
 import type { AuditCtx } from "./bitacora.service";
 import { TipoMovimientoBitacora } from "@prisma/client";
-
+import { bitacoraService } from "./bitacora.service";
 
 
 type UnidadAdministrativaCreateInput = {
@@ -67,16 +67,12 @@ export const unidadAdministrativaService = {
     return prisma.$transaction(async (tx) => {
       const created = await tx.unidadAdministrativa.create({ data });
 
-      await tx.bitacora.create({
-        data: {
-          usuarioId: ctx.usuarioId,
-          ipOrigen: ctx.ipOrigen ?? null,
-          tipoMovimiento: TipoMovimientoBitacora.CREAR,
-          tablaAfectada: "UnidadAdministrativa",
-          registroId: created.id,
-          descripcion: `Creó unidad administrativa ${created.clave} (${created.siglas})`,
-        },
-      });
+      await bitacoraService.log(ctx, {
+        tipoMovimiento: TipoMovimientoBitacora.CREAR,
+        tablaAfectada: "UnidadAdministrativa",
+        registroId: created.id,
+        descripcion: `Creó nueva unidad administrativa ${created.clave} (${created.siglas})`,
+      }, tx);
 
       return created;
     });
@@ -90,16 +86,12 @@ export const unidadAdministrativaService = {
         data,
       });
 
-      await tx.bitacora.create({
-        data: {
-          usuarioId: ctx.usuarioId,
-          ipOrigen: ctx.ipOrigen ?? null,
-          tipoMovimiento: TipoMovimientoBitacora.ACTUALIZAR,
-          tablaAfectada: "UnidadAdministrativa",
-          registroId: updated.id,
-          descripcion: `Actualizó unidad administrativa ${updated.clave} (${updated.siglas})`,
-        },
-      });
+      await bitacoraService.log(ctx, {
+        tipoMovimiento: TipoMovimientoBitacora.ACTUALIZAR,
+        tablaAfectada: "UnidadAdministrativa",
+        registroId: updated.id,
+        descripcion: `Actualizó unidad administrativa ${updated.clave} (${updated.siglas})`,
+      }, tx);
 
       return updated;
     });

@@ -1,6 +1,7 @@
 import { prisma } from "$lib/server/prisma";
 import type { AuditCtx } from "./bitacora.service";
 import { TipoMovimientoBitacora } from "@prisma/client";
+import { bitacoraService } from "./bitacora.service";
 
 type DivisionCreateInput = {
   clave: string;
@@ -48,16 +49,12 @@ export const divisionService = {
     return prisma.$transaction(async (tx) => {
       const created = await tx.division.create({ data });
 
-      await tx.bitacora.create({
-        data: {
-          usuarioId: ctx.usuarioId,
-          ipOrigen: ctx.ipOrigen ?? null,
-          tipoMovimiento: TipoMovimientoBitacora.CREAR,
-          tablaAfectada: "Division",
-          registroId: created.id,
-          descripcion: `Creó división ${created.clave} (${created.siglas})`,
-        },
-      });
+      await bitacoraService.log(ctx, {
+        tipoMovimiento: TipoMovimientoBitacora.CREAR,
+        tablaAfectada: "Division",
+        registroId: created.id,
+        descripcion: `Creó nueva división ${created.clave} (${created.siglas})`,
+      }, tx);
 
       return created;
     });
@@ -70,16 +67,12 @@ export const divisionService = {
         data,
       });
 
-      await tx.bitacora.create({
-        data: {
-          usuarioId: ctx.usuarioId,
-          ipOrigen: ctx.ipOrigen ?? null,
-          tipoMovimiento: TipoMovimientoBitacora.ACTUALIZAR,
-          tablaAfectada: "Division",
-          registroId: updated.id,
-          descripcion: `Actualizó división ${updated.clave} (${updated.siglas})`,
-        },
-      });
+      await bitacoraService.log(ctx, {
+        tipoMovimiento: TipoMovimientoBitacora.ACTUALIZAR,
+        tablaAfectada: "Division",
+        registroId: updated.id,
+        descripcion: `Actualizó división ${updated.clave} (${updated.siglas})`,
+      }, tx);
 
       return updated;
     });

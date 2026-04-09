@@ -2,6 +2,7 @@ import type { TipoUbicacion, Prisma } from "@prisma/client";
 import { prisma } from "$lib/server/prisma";
 import type { AuditCtx } from "./bitacora.service";
 import { TipoMovimientoBitacora } from "@prisma/client";
+import { bitacoraService } from "./bitacora.service";
 
 type LugarCreateInput = {
   clave: string;
@@ -48,16 +49,12 @@ export const lugaresService = {
     return prisma.$transaction(async (tx) => {
       const created = await tx.lugar.create({ data });
 
-      await tx.bitacora.create({
-        data: {
-          usuarioId: ctx.usuarioId,
-          ipOrigen: ctx.ipOrigen ?? null,
-          tipoMovimiento: TipoMovimientoBitacora.CREAR,
-          tablaAfectada: "Lugar",
-          registroId: created.id,
-          descripcion: `Creó lugar ${created.clave}${created.descripcion ? ` (${created.descripcion})` : ""}`,
-        },
-      });
+      await bitacoraService.log(ctx, {
+        tipoMovimiento: TipoMovimientoBitacora.CREAR,
+        tablaAfectada: "Lugar",
+        registroId: created.id,
+        descripcion: `Creó nuevo lugar ${created.clave} - ${created.descripcion}`,
+      }, tx);
 
       return created;
     });
@@ -70,16 +67,12 @@ export const lugaresService = {
         data,
       });
 
-      await tx.bitacora.create({
-        data: {
-          usuarioId: ctx.usuarioId,
-          ipOrigen: ctx.ipOrigen ?? null,
-          tipoMovimiento: TipoMovimientoBitacora.ACTUALIZAR,
-          tablaAfectada: "Lugar",
-          registroId: updated.id,
-          descripcion: `Actualizó lugar ${updated.clave}`,
-        },
-      });
+      await bitacoraService.log(ctx, {
+        tipoMovimiento: TipoMovimientoBitacora.ACTUALIZAR,
+        tablaAfectada: "Lugar",
+        registroId: updated.id,
+        descripcion: `Actualizó lugar ${updated.clave} - ${updated.descripcion}`,
+      }, tx);
 
       return updated;
     });
@@ -99,16 +92,12 @@ export const lugaresService = {
         select: { id: true, clave: true, activo: true },
       });
 
-      await tx.bitacora.create({
-        data: {
-          usuarioId: ctx.usuarioId,
-          ipOrigen: ctx.ipOrigen ?? null,
-          tipoMovimiento: TipoMovimientoBitacora.ACTUALIZAR,
-          tablaAfectada: "Lugar",
-          registroId: updated.id,
-          descripcion: `${updated.activo ? "Activó" : "Desactivó"} lugar ${updated.clave}`,
-        },
-      });
+      await bitacoraService.log(ctx, {
+        tipoMovimiento: TipoMovimientoBitacora.ACTUALIZAR,
+        tablaAfectada: "Lugar",
+        registroId: updated.id,
+        descripcion: `${updated.activo ? "Activó" : "Desactivó"} lugar ${updated.clave}`,
+      }, tx);
 
       return updated;
     });

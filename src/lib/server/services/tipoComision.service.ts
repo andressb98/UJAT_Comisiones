@@ -1,6 +1,7 @@
 import { prisma } from "$lib/server/prisma";
 import type { AuditCtx } from "./bitacora.service";
 import { TipoMovimientoBitacora } from "@prisma/client";
+import { bitacoraService } from "./bitacora.service";
 
 type TipoComisionCreateInput = {
   clave: string;
@@ -21,13 +22,13 @@ export const tiposComisionService = {
         ...(includeInactive ? {} : { activo: true }),
         ...(q
           ? {
-              OR: [
-                { clave: { contains: q } },
-                { nombre: { contains: q } },
-                { descripcion: { contains: q } },
-                { departamentoCreador: { contains: q } },
-              ],
-            }
+            OR: [
+              { clave: { contains: q } },
+              { nombre: { contains: q } },
+              { descripcion: { contains: q } },
+              { departamentoCreador: { contains: q } },
+            ],
+          }
           : {}),
       },
       orderBy: { creadoEn: "desc" },
@@ -43,16 +44,13 @@ export const tiposComisionService = {
     return prisma.$transaction(async (tx) => {
       const created = await tx.tipoComision.create({ data });
 
-      await tx.bitacora.create({
-        data: {
-          usuarioId: ctx.usuarioId,
-          ipOrigen: ctx.ipOrigen ?? null,
-          tipoMovimiento: TipoMovimientoBitacora.CREAR,
-          tablaAfectada: "TipoComision",
-          registroId: created.id,
-          descripcion: `Creó tipo de comisión ${created.clave} (${created.nombre})`,
-        },
-      });
+      await bitacoraService.log(ctx, {
+        tipoMovimiento: TipoMovimientoBitacora.CREAR,
+        tablaAfectada: "TipoComision",
+        registroId: created.id,
+        descripcion: `Creó tipo de comisión ${created.clave}`,
+      }, tx);
+
 
       return created;
 
@@ -66,16 +64,12 @@ export const tiposComisionService = {
         data,
       });
 
-      await tx.bitacora.create({
-        data: {
-          usuarioId: ctx.usuarioId,
-          ipOrigen: ctx.ipOrigen ?? null,
-          tipoMovimiento: TipoMovimientoBitacora.ACTUALIZAR,
-          tablaAfectada: "TipoComision",
-          registroId: updated.id,
-          descripcion: `Actualizó tipo de comisión ${updated.clave} (${updated.nombre})`,
-        },
-      });
+      await bitacoraService.log(ctx, {
+        tipoMovimiento: TipoMovimientoBitacora.ACTUALIZAR,
+        tablaAfectada: "TipoComision",
+        registroId: updated.id,
+        descripcion: `Actualizó tipo de comisión ${updated.clave}`,
+      }, tx);
 
       return updated;
     });
@@ -91,16 +85,13 @@ export const tiposComisionService = {
         data: { activo: !current.activo },
       });
 
-      await tx.bitacora.create({
-        data: {
-          usuarioId: ctx.usuarioId,
-          ipOrigen: ctx.ipOrigen ?? null,
-          tipoMovimiento: TipoMovimientoBitacora.ACTUALIZAR,
-          tablaAfectada: "TipoComision",
-          registroId: updated.id,
-          descripcion: `Desactivó tipo de comisión ${updated.clave} (${updated.nombre})`,
-        },
-      });
+      await bitacoraService.log(ctx, {
+        tipoMovimiento: TipoMovimientoBitacora.ACTUALIZAR,
+        tablaAfectada: "TipoComision",
+        registroId: updated.id,
+        descripcion: `${updated.activo ? "Activó" : "Desactivó"} tipo de comisión ${updated.clave}`,
+      }, tx);
+
 
       return updated;
     });
