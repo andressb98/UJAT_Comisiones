@@ -8,8 +8,8 @@
 	import BotonExportar from '$lib/components/botones/botonExportar.svelte';
 	import { hasPermiso } from '$lib/utils/permisos';
 	import ModalCrearDivisionRapida from '$lib/components/modales/ModalCrearDivisionRapida.svelte';
-	import type { SubmitFunction } from '@sveltejs/kit';
 	import { toast } from 'svelte-sonner';
+	import UnidadTable from '$lib/components/forms/TableForms.svelte';
 
 	type ZodFlattened = {
 		formErrors: string[];
@@ -69,6 +69,18 @@
 		}
 	});
 
+	const tableColumns = [
+		{ label: 'Clave', key: 'clave' },
+		{ label: 'Siglas', key: 'siglas' },
+		{ label: 'Descripción', key: 'descripcion' },
+		{
+			label: 'División',
+			key: 'division',
+			transform: (val: any) =>
+				val ? `${val.siglas} — ${val.descripcion ?? val.clave}` : '-'
+		}
+	];
+
 	function resetForm() {
 		id = null;
 		siglas = '';
@@ -98,8 +110,8 @@
 		showForm = false;
 	}
 
-	function selectRow(row: any) {
-		selectedId = row.id;
+	function handleSelect(event: CustomEvent) {
+		selectedId = event.detail.id;
 	}
 
 	// Cuando el modal crea una división:
@@ -332,45 +344,12 @@
 		</div>
 
 		<!-- Tabla -->
-		<div class="box">
-			<div class="table-container">
-				<table class="table is-fullwidth is-hoverable">
-					<thead>
-						<tr>
-							<th>Clave</th>
-							<th>Siglas</th>
-							<th>Descripción</th>
-							<th>División</th>
-						</tr>
-					</thead>
-
-					<tbody>
-						{#if data.unidades.length === 0}
-							<tr>
-								<td colspan="4" class="has-text-centered">Sin resultados</td>
-							</tr>
-						{:else}
-							{#each data.unidades as row (row.id)}
-								<tr
-									class={row.id === selectedId ? 'is-selected' : ''}
-									on:click={() => selectRow(row)}
-									style="cursor:pointer"
-								>
-									<td><strong>{row.clave}</strong></td>
-									<td>{row.siglas ?? '-'}</td>
-									<td>{row.descripcion ?? '-'}</td>
-									<td
-										>{row.division?.siglas ?? '-'} — {row.division?.descripcion ??
-											row.division?.clave ??
-											'-'}</td
-									>
-								</tr>
-							{/each}
-						{/if}
-					</tbody>
-				</table>
-			</div>
-		</div>
+		 <UnidadTable
+			columns={tableColumns}
+			items={data.unidades}
+			{selectedId}
+			on:select={handleSelect}
+		/>
 	</div>
 
 	<ModalCrearDivisionRapida

@@ -2,11 +2,11 @@
 	import { enhance } from '$app/forms';
 	import { invalidateAll } from '$app/navigation';
 	import { toast } from 'svelte-sonner';
-	import { page } from '$app/stores';
-	import FormAlert from '$lib/components/forms/FormAlert.svelte';
 	import { buildEnhanceHandler, type EnhanceFailState } from '$lib/utils/forms/actionFail';
 	import { hasPermiso } from '$lib/utils/permisos';
 	import BotonExportar from '$lib/components/botones/botonExportar.svelte';
+	import DocenteForm from '$lib/components/forms/docenteForms/DocenteForm.svelte';
+	import DocenteTable from '$lib/components/forms/TableForms.svelte';
 
 	export let data: {
 		docentes: any[];
@@ -16,6 +16,20 @@
 
 		divisiones: any[];
 		permisos: string[];
+	};
+	let formData = {
+		id: null as number | null,
+		cveProf: '',
+		divisionIdForm: '' as number | '',
+		areaConProf: '',
+		gradoPrefijo: '',
+		gradoEspecialidad: '',
+		nombreProf: '',
+		apePatProf: '',
+		apeMatProf: '',
+		contratoProf: '',
+		cateProf: '',
+		correoProf: ''
 	};
 
 	let gradoMsg: string | null = null;
@@ -93,41 +107,21 @@
 	let showForm = false;
 	let mode: 'create' | 'edit' = 'create';
 
-	// form fields
-	let id: number | null = null;
-
-	let cveProf = '';
-	let divisionIdForm: number | '' = '';
-
-	let areaConProf = '';
-	let gradoPrefijo = '';
-	let gradoEspecialidad = '';
-
-	let nombreProf = '';
-	let apePatProf = '';
-	let apeMatProf = '';
-
-	let contratoProf = '';
-	let cateProf = '';
-	let correoProf = '';
-
 	function resetForm() {
-		id = null;
-
-		cveProf = '';
-		divisionIdForm = '';
-
-		areaConProf = '';
-		gradoPrefijo = '';
-		gradoEspecialidad = '';
-
-		nombreProf = '';
-		apePatProf = '';
-		apeMatProf = '';
-
-		contratoProf = '';
-		cateProf = '';
-		correoProf = '';
+		formData = {
+			id: null,
+			cveProf: '',
+			divisionIdForm: '',
+			areaConProf: '',
+			gradoPrefijo: '',
+			gradoEspecialidad: '',
+			nombreProf: '',
+			apePatProf: '',
+			apeMatProf: '',
+			contratoProf: '',
+			cateProf: '',
+			correoProf: ''
+		};
 	}
 
 	function openCreate() {
@@ -142,29 +136,25 @@
 		mode = 'edit';
 		showForm = true;
 
-		id = selected.id;
-
-		cveProf = selected.cveProf ?? '';
-		divisionIdForm = selected.divisionId ?? '';
-
-		areaConProf = selected.areaConProf ?? '';
-		gradoPrefijo = selected.gradoPrefijo ?? '';
-
-		nombreProf = selected.nombreProf ?? '';
-		apePatProf = selected.apePatProf ?? '';
-		apeMatProf = selected.apeMatProf ?? '';
-
-		contratoProf = selected.contratoProf ?? '';
-		cateProf = selected.cateProf ?? '';
-		correoProf = selected.correoProf ?? '';
+		// 2. Llenamos el objeto de un solo golpe
+		formData = {
+			id: selected.id,
+			cveProf: selected.cveProf ?? '',
+			divisionIdForm: selected.divisionId ?? '',
+			areaConProf: selected.areaConProf ?? '',
+			gradoPrefijo: selected.gradoPrefijo ?? '',
+			gradoEspecialidad: selected.gradoEspecialidad ?? '',
+			nombreProf: selected.nombreProf ?? '',
+			apePatProf: selected.apePatProf ?? '',
+			apeMatProf: selected.apeMatProf ?? '',
+			contratoProf: selected.contratoProf ?? '',
+			cateProf: selected.cateProf ?? '',
+			correoProf: selected.correoProf ?? ''
+		};
 	}
 
 	function closeForm() {
 		showForm = false;
-	}
-
-	function selectRow(row: any) {
-		selectedId = row.id;
 	}
 
 	function fullName(d: any) {
@@ -172,6 +162,10 @@
 		return parts.join(' ');
 	}
 
+	function selectRow(event: CustomEvent) {
+		const row = event.detail;
+		selectedId = row.id;
+	}
 
 	//Helpers de errores para debbug
 
@@ -179,6 +173,33 @@
 		errors[field]?.length;
 	const firstFieldError = (errors: Record<string, string[] | undefined>, field: string) =>
 		errors[field]?.[0];
+
+	const tableColumns = [
+		{ label: 'Clave', key: 'cveProf' },
+		{
+			label: 'Nombre',
+			key: 'nombreProf',
+			// Transformamos los datos para unir el nombre completo
+			transform: (_, row) => `${row.nombreProf} ${row.apePatProf} ${row.apeMatProf || ''}`
+		},
+		{
+			label: 'División',
+			key: 'division',
+			transform: (val) => val?.descripcion ?? val?.clave ?? '-'
+		},
+		{
+			label: 'Estado',
+			key: 'activo',
+			transform: (val) =>
+				val === false
+					? '<span class="tag is-danger">INACTIVO</span>'
+					: '<span class="tag is-success">ACTIVO</span>'
+		}
+	];
+
+	function handleSelect(event: CustomEvent) {
+		selectedId = event.detail.id;
+	}
 </script>
 
 <section class="section">
@@ -257,278 +278,30 @@
 					filename="docentes_ujat"
 					title="Listado de Docentes"
 				/>
-
 			</div>
 
 			<!-- Form colapsable -->
 			{#if showForm}
-				<div class="box" style="margin-top: 1rem;">
-					<div class="level">
-						<div class="level-left">
-							<h2 class="title is-5">{mode === 'create' ? 'Agregar docente' : 'Editar docente'}</h2>
-						</div>
-						<div class="level-right">
-							<button class="button is-light" type="button" on:click={closeForm}>Cerrar</button>
-						</div>
-					</div>
-
-					<form
-						method="POST"
-						action={mode === 'create' ? '?/create' : '?/update'}
-						use:enhance={handleSubmit}
-					>
-						<FormAlert message={formMessage} {formErrors} variant="danger" />
-
-						{#if mode === 'edit'}
-							<input type="hidden" name="id" value={id ?? ''} />
-						{/if}
-
-						<div class="columns is-multiline">
-							<div class="column is-4">
-								<div class="field">
-									<label class="label">Clave (cveProf)</label>
-									<div class="control">
-										<input
-											class="input {hasFieldError(fieldErrors, 'clave')}"
-											name="cveProf"
-											bind:value={cveProf}
-											placeholder="Ej: 202H17041"
-										/>
-									</div>
-									{#if fieldErrors.cveProf?.length}
-										<p class="help is-danger">{fieldErrors.cveProf[0]}</p>
-									{/if}
-									{#if mode === 'edit'}
-										<p class="help">La clave no se edita (es única).</p>
-									{/if}
-								</div>
-							</div>
-
-							<div class="column is-4">
-								<div class="field">
-									<label class="label">División</label>
-
-									{#if $page.data.roles.includes('SUPER_ADMIN')}
-										<div
-											class="control select is-fullwidth {fieldErrors.divisionId?.length
-												? 'is-danger'
-												: ''}"
-										>
-											<select name="divisionId" bind:value={divisionIdForm}>
-												<option value="">(selecciona)</option>
-												{#each data.divisiones as dv (dv.id)}
-													<option value={dv.id}>
-														{dv.descripcion ?? dv.clave ?? `División ${dv.id}`}
-													</option>
-												{/each}
-											</select>
-										</div>
-									{:else}
-										<div class="control">
-											<input type="hidden" name="divisionId" value={$page.data.division.id} />
-											<input
-												class="input is-static"
-												type="text"
-												value={$page.data.division.descripcion ?? $page.data.division.clave}
-												readonly
-											/>
-										</div>
-									{/if}
-
-									{#if fieldErrors.divisionId?.length}
-										<p class="help is-danger">{fieldErrors.divisionId[0]}</p>
-									{/if}
-								</div>
-							</div>
-
-							<div class="column is-4">
-								<div class="field">
-									<label class="label">Grado (Ing / Mtro / Dr)</label>
-
-									<div class="field has-addons">
-										<p class="control is-expanded">
-											<span class="select is-fullwidth">
-												<select name="gradoPrefijo" bind:value={gradoPrefijo}>
-													<option value="">(opcional)</option>
-													<option value="Ing.">Ing.</option>
-													<option value="Lic.">Lic.</option>
-													<option value="Mtro.">Mtro.</option>
-													<option value="Mtra.">Mtra.</option>
-													<option value="Dr.">Dr.</option>
-													<option value="Dra.">Dra.</option>
-													<option value="TSU">TSU</option>
-												</select>
-											</span>
-										</p>
-									</div>
-								</div>
-							</div>
-
-							<div class="column is-4">
-								<div class="field">
-									<label class="label">Nombre</label>
-									<div class="control">
-										<input class="input" name="nombreProf" bind:value={nombreProf} />
-									</div>
-									{#if fieldErrors.nombreProf?.length}
-										<p class="help is-danger">{fieldErrors.nombreProf[0]}</p>
-									{/if}
-								</div>
-							</div>
-
-							<div class="column is-4">
-								<div class="field">
-									<label class="label">Apellido paterno</label>
-									<div class="control">
-										<input class="input" name="apePatProf" bind:value={apePatProf} />
-									</div>
-									{#if fieldErrors.apePatProf?.length}
-										<p class="help is-danger">{fieldErrors.apePatProf[0]}</p>
-									{/if}
-								</div>
-							</div>
-
-							<div class="column is-4">
-								<div class="field">
-									<label class="label">Apellido materno</label>
-									<div class="control">
-										<input class="input" name="apeMatProf" bind:value={apeMatProf} />
-									</div>
-								</div>
-							</div>
-
-							<div class="column is-4">
-								<div class="field">
-									<label class="label">Correo</label>
-									<div class="control">
-										<input
-											class="input"
-											name="correoProf"
-											bind:value={correoProf}
-											placeholder="(opcional)"
-										/>
-									</div>
-									{#if fieldErrors.correoProf?.length}
-										<p class="help is-danger">{fieldErrors.correoProf[0]}</p>
-									{/if}
-								</div>
-							</div>
-
-							<div class="column is-4">
-								<div class="field">
-									<label class="label">Área</label>
-									<div class="control">
-										<input
-											class="input"
-											name="areaConProf"
-											bind:value={areaConProf}
-											placeholder="(opcional)"
-										/>
-									</div>
-								</div>
-							</div>
-
-							<div class="column is-4">
-								<div class="field">
-									<label class="label">Grado especialidad</label>
-									<div class="control">
-										<input
-											class="input"
-											name="gradoEspecialidad"
-											bind:value={gradoEspecialidad}
-											placeholder="Ej: Ingeniería en Sistemas Computacionales"
-										/>
-									</div>
-									{#if fieldErrors.gradoEspecialidad?.length}
-										<p class="help is-danger">{fieldErrors.gradoEspecialidad[0]}</p>
-									{/if}
-								</div>
-							</div>
-
-							<div class="column is-4">
-								<div class="field">
-									<label class="label">Contrato</label>
-									<div class="control">
-										<input
-											class="input"
-											name="contratoProf"
-											bind:value={contratoProf}
-											placeholder="(opcional)"
-										/>
-									</div>
-								</div>
-							</div>
-
-							<div class="column is-4">
-								<div class="field">
-									<label class="label">Categoría</label>
-									<div class="control">
-										<input
-											class="input"
-											name="cateProf"
-											bind:value={cateProf}
-											placeholder="(opcional)"
-										/>
-									</div>
-								</div>
-							</div>
-
-							<div class="column is-12">
-								<div class="is-flex is-justify-content-flex-end gap-2">
-									<button class="button is-primary" type="submit">
-										{mode === 'create' ? 'Guardar' : 'Actualizar'}
-									</button>
-									<button class="button is-light" type="button" on:click={closeForm}
-										>Cancelar</button
-									>
-								</div>
-							</div>
-						</div>
-					</form>
-				</div>
+				<DocenteForm
+					{mode}
+					bind:formData
+					divisiones={data.divisiones}
+					{formMessage}
+					{formErrors}
+					{fieldErrors}
+					submitHandler={handleSubmit}
+					on:close={closeForm}
+				/>
 			{/if}
 		</div>
 
 		<!-- Tabla -->
-		<div class="box">
-			<div class="table-container">
-				<table class="table is-fullwidth is-hoverable">
-					<thead>
-						<tr>
-							<th>Clave</th>
-							<th>Nombre</th>
-							<th>División</th>
-							<th>Correo</th>
-							<th>Grado</th>
-							<th>Estado</th>
-						</tr>
-					</thead>
-
-					<tbody>
-						{#if data.docentes.length === 0}
-							<tr>
-								<td colspan="6" class="has-text-centered">Sin resultados</td>
-							</tr>
-						{:else}
-							{#each data.docentes as row (row.id)}
-								<tr
-									class={row.id === selectedId ? 'is-selected' : ''}
-									on:click={() => selectRow(row)}
-									style="cursor:pointer"
-								>
-									<td><strong>{row.cveProf}</strong></td>
-									<td>{fullName(row)}</td>
-									<td>{row.division?.descripcion ?? row.division?.clave ?? '-'}</td>
-									<td>{row.correoProf ?? '-'}</td>
-									<td>{row.gradoEspecialidad ?? '-'}</td>
-									<td>{row.activo === false ? 'INACTIVO' : 'ACTIVO'}</td>
-								</tr>
-							{/each}
-						{/if}
-					</tbody>
-				</table>
-			</div>
-		</div>
+		<DocenteTable
+			columns={tableColumns}
+			items={data.docentes}
+			{selectedId}
+			on:select={handleSelect}
+		/>
 	</div>
 </section>
 

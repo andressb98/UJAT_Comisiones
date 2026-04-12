@@ -7,6 +7,7 @@
 	import { buildEnhanceHandler, type EnhanceFailState } from '$lib/utils/forms/actionFail';
 	import { hasFieldError, firstFieldError } from '$lib/utils/forms/field';
 	import { hasPermiso } from '$lib/utils/permisos';
+	import DivisionesTable from '$lib/components/forms/TableForms.svelte';
 
 	export let data: {
 		divisiones: any[];
@@ -50,6 +51,12 @@
 		}
 	});
 
+	const tableColumns = [
+		{ label: 'Clave', key: 'clave' },
+		{ label: 'Siglas', key: 'siglas' },
+		{ label: 'Descripción', key: 'descripcion' }
+	];
+
 	function resetForm() {
 		id = null;
 		siglas = '';
@@ -78,7 +85,11 @@
 	}
 
 	function selectRow(row: any) {
-		selectedId = row.id;
+		if (selectedId === row.id) {
+			selectedId = null;
+		} else {
+			selectedId = row.id;
+		}
 	}
 </script>
 
@@ -219,38 +230,11 @@
 		</div>
 
 		<!-- Tabla -->
-		<div class="box">
-			<div class="table-container">
-				<table class="table is-fullwidth is-hoverable">
-					<thead>
-						<tr>
-							<th>Clave</th>
-							<th>Siglas</th>
-							<th>Descripción</th>
-						</tr>
-					</thead>
-
-					<tbody>
-						{#if data.divisiones.length === 0}
-							<tr>
-								<td colspan="3" class="has-text-centered">Sin resultados</td>
-							</tr>
-						{:else}
-							{#each data.divisiones as row (row.id)}
-								<tr
-									class={row.id === selectedId ? 'is-selected' : ''}
-									on:click={() => selectRow(row)}
-									style="cursor:pointer"
-								>
-									<td><strong>{row.clave}</strong></td>
-									<td>{row.siglas}</td>
-									<td>{row.descripcion ?? '-'}</td>
-								</tr>
-							{/each}
-						{/if}
-					</tbody>
-				</table>
-			</div>
-		</div>
+		<DivisionesTable
+			columns={tableColumns}
+			items={data.divisiones}
+			{selectedId}
+			on:select={selectRow}
+		/>
 	</div>
 </section>

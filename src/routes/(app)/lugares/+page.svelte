@@ -7,6 +7,7 @@
 	import { toast } from 'svelte-sonner';
 	import BotonExportar from '$lib/components/botones/BotonExportar.svelte';
 	import { hasPermiso } from '$lib/utils/permisos';
+	import LugaresTable from '$lib/components/forms/TableForms.svelte'
 
 	export let data: {
 		lugares: any[];
@@ -37,6 +38,16 @@
 			fieldErrors = state.fieldErrors;
 		}
 	});
+
+	const tableColumns = [
+		{ label: 'Clave', key: 'clave' },
+		{ label: 'Descripción', key: 'descripcion' },
+		{ label: 'Tipo', key: 'tipoUbicacion' },
+		{ label: 'Edificio', key: 'edificio' },
+		{ label: 'Salón/Oficina', key: 'salonOficinaAula' },
+		{ label: 'Ciudad', key: 'municipioCiudad' },
+		{ label: 'Colonia', key: 'coloniaBarrio' },
+		{ label: 'Estado', key: 'activo', format: (value: any) => (value === false ? 'INACTIVO' : 'ACTIVO') }]
 
 	const permisos = data.permisos ?? [];
 
@@ -92,8 +103,8 @@
 		showForm = false;
 	}
 
-	function selectRow(row: any) {
-		selectedId = row.id;
+	function handleSelect(event: CustomEvent) {
+		selectedId = event.detail.id;
 	}
 </script>
 
@@ -274,48 +285,11 @@
 		</div>
 
 		<!-- Tabla -->
-		<div class="box">
-			<div class="table-container">
-				<table class="table is-fullwidth is-hoverable">
-					<thead>
-						<tr>
-							<th>Clave</th>
-							<th>Descripción</th>
-							<th>Tipo</th>
-							<th>Edificio</th>
-							<th>Salón/Oficina</th>
-							<th>Ciudad</th>
-							<th>Colonia</th>
-							<th>Estado</th>
-						</tr>
-					</thead>
-
-					<tbody>
-						{#if data.lugares.length === 0}
-							<tr>
-								<td colspan="8" class="has-text-centered">Sin resultados</td>
-							</tr>
-						{:else}
-							{#each data.lugares as row (row.id)}
-								<tr
-									class={row.id === selectedId ? 'is-selected' : ''}
-									on:click={() => selectRow(row)}
-									style="cursor:pointer"
-								>
-									<td><strong>{row.clave}</strong></td>
-									<td>{row.descripcion ?? '-'}</td>
-									<td>{row.tipoUbicacion ?? '-'}</td>
-									<td>{row.edificio ?? '-'}</td>
-									<td>{row.salonOficinaAula ?? '-'}</td>
-									<td>{row.municipioCiudad ?? '-'}</td>
-									<td>{row.coloniaBarrio ?? '-'}</td>
-									<td>{row.activo === false ? 'INACTIVO' : 'ACTIVO'}</td>
-								</tr>
-							{/each}
-						{/if}
-					</tbody>
-				</table>
-			</div>
-		</div>
+		<LugaresTable
+			columns={tableColumns}
+			items={data.lugares}
+			{selectedId}
+			on:select={handleSelect}
+		/>
 	</div>
 </section>

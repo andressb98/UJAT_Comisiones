@@ -7,6 +7,7 @@
 	import { hasFieldError, firstFieldError } from '$lib/utils/forms/field';
 	import { hasPermiso } from '$lib/utils/permisos';
 	import BotonExportar from '$lib/components/botones/BotonExportar.svelte';
+	import TipoTable from '$lib/components/forms/TableForms.svelte';
 
 	export let data: {
 		tiposComision: any[];
@@ -52,6 +53,21 @@
 		}
 	});
 
+	const tableColumns = [
+		{ label: 'Clave', key: 'clave' },
+		{ label: 'Nombre', key: 'nombre' },
+		{ label: 'Descripción', key: 'descripcion' },
+		{ label: 'Departamento creador', key: 'departamentoCreador' },
+		{
+			label: 'Estado',
+			key: 'activo',
+			transform: (val: boolean) =>
+				val === false
+					? '<span class="tag is-danger">INACTIVO</span>'
+					: '<span class="tag is-success">ACTIVO</span>'
+		}
+	];
+
 	function resetForm() {
 		id = null;
 		nombre = '';
@@ -79,8 +95,8 @@
 		showForm = false;
 	}
 
-	function selectRow(row: any) {
-		selectedId = row.id;
+	function handleSelect(event: CustomEvent) {
+		selectedId = event.detail.id;
 	}
 </script>
 
@@ -236,42 +252,11 @@
 		</div>
 
 		<!-- Tabla -->
-		<div class="box">
-			<div class="table-container">
-				<table class="table is-fullwidth is-hoverable">
-					<thead>
-						<tr>
-							<th>Clave</th>
-							<th>Nombre</th>
-							<th>Descripción</th>
-							<th>Departamento creador</th>
-							<th>Estado</th>
-						</tr>
-					</thead>
-
-					<tbody>
-						{#if data.tiposComision.length === 0}
-							<tr>
-								<td colspan="5" class="has-text-centered">Sin resultados</td>
-							</tr>
-						{:else}
-							{#each data.tiposComision as row (row.id)}
-								<tr
-									class={row.id === selectedId ? 'is-selected' : ''}
-									on:click={() => selectRow(row)}
-									style="cursor:pointer"
-								>
-									<td><strong>{row.clave}</strong></td>
-									<td>{row.nombre ?? '-'}</td>
-									<td>{row.descripcion ?? '-'}</td>
-									<td>{row.departamentoCreador ?? '-'}</td>
-									<td>{row.activo === false ? 'INACTIVO' : 'ACTIVO'}</td>
-								</tr>
-							{/each}
-						{/if}
-					</tbody>
-				</table>
-			</div>
-		</div>
+		<TipoTable
+			columns={tableColumns}
+			items={data.tiposComision}
+			{selectedId}
+			on:select={handleSelect}
+		/>
 	</div>
 </section>
