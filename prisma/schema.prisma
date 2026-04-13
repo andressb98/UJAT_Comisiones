@@ -7,11 +7,11 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-/**
- * =========================
- * ENUMS (sin strings sueltos)
- * =========================
- */
+//
+ / =========================
+ / ENUMS (sin strings sueltos)
+ / =========================
+ //
 
 enum RolCodigo {
   SUPER_ADMIN
@@ -132,11 +132,11 @@ enum AlcanceComision {
   UNIVERSIDAD
 }
 
-/**
- * =========================
- * USUARIOS / ROLES / PERMISOS
- * =========================
- */
+//
+ / =========================
+ / USUARIOS / ROLES / PERMISOS
+ / =========================
+ //
 
 model Usuario {
   id            Int      @id @default(autoincrement())
@@ -235,11 +235,11 @@ model RolPermiso {
   @@index([permisoId])
 }
 
-/**
- * =========================
- * DIVISION / UNIDADES / CARGOS
- * =========================
- */
+///
+ / =========================
+ / DIVISION / UNIDADES / CARGOS
+ / =========================
+ //
 
 model Division {
   id          Int     @id @default(autoincrement())
@@ -351,11 +351,11 @@ model UsuarioServicioSocial {
   @@index([unidadAdministrativaId]) // Index para optimizar consultas por unidad administrativa
 }
 
-/**
- * =========================
- * DOCENTES (CATÁLOGO SIN LOGIN)
- * =========================
- */
+///
+ / =========================
+ / DOCENTES (CATÁLOGO SIN LOGIN)
+ / =========================
+ //
 
 model Docente {
   id      Int    @id @default(autoincrement())
@@ -386,11 +386,11 @@ model Docente {
   @@index([activo])
 }
 
-/**
- * =========================
- * COMISIONES
- * =========================
- */
+///
+ / =========================
+ / COMISIONES
+ / =========================
+ //
 
 model TipoComision {
   id                  Int              @id @default(autoincrement())
@@ -473,11 +473,11 @@ model DocenteComision {
   @@index([comisionId])
 }
 
-/**
- * =========================
- * LUGARES
- * =========================
- */
+///
+ / =========================
+ / LUGARES
+ / =========================
+ //
 
 model Lugar {
   id               Int            @id @default(autoincrement())
@@ -496,11 +496,11 @@ model Lugar {
   actualizadoEn DateTime @updatedAt
 }
 
-/**
- * =========================
- * BITÁCORA
- * =========================
- */
+///
+ / =========================
+ / BITÁCORA
+ / =========================
+ //
 
 model Bitacora {
   id Int @id @default(autoincrement())
