@@ -7,11 +7,6 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-//
- / =========================
- / ENUMS (sin strings sueltos)
- / =========================
- //
 
 enum RolCodigo {
   SUPER_ADMIN
@@ -35,7 +30,6 @@ enum CategoriaGradoProfesor {
 }
 
 enum PermisoCodigo {
-  // ---- Usuarios / Roles / Permisos ----
   USUARIOS_VER
   USUARIOS_CREAR
   USUARIOS_EDITAR
@@ -47,7 +41,6 @@ enum PermisoCodigo {
   PERMISOS_VER
   PERMISOS_GESTIONAR
 
-  // ---- División / Unidades ----
   DIVISION_VER
   DIVISION_EDITAR
 
@@ -66,17 +59,14 @@ enum PermisoCodigo {
   UNIDADES_EDITAR
   UNIDADES_DESACTIVAR
 
-  // ---- Docentes (catálogo) ----
   DOCENTES_VER
   DOCENTES_CREAR
   DOCENTES_EDITAR
   DOCENTES_DESACTIVAR
 
-  // ---- Catálogos (tipo comisión, lugares, grados, etc.) ----
   CATALOGOS_VER
   CATALOGOS_GESTIONAR
 
-  // ---- Comisiones ----
   COMISIONES_VER
   COMISIONES_CREAR
   COMISIONES_EDITAR
@@ -85,7 +75,6 @@ enum PermisoCodigo {
   COMISIONES_ASIGNAR_DOCENTES
   COMISIONES_DESASIGNAR_DOCENTES
 
-  // ---- Bitácora ----
   BITACORA_VER
 }
 
@@ -132,12 +121,6 @@ enum AlcanceComision {
   UNIVERSIDAD
 }
 
-//
- / =========================
- / USUARIOS / ROLES / PERMISOS
- / =========================
- //
-
 model Usuario {
   id            Int      @id @default(autoincrement())
   nombre        String
@@ -147,19 +130,15 @@ model Usuario {
   creadoEn      DateTime @default(now())
   actualizadoEn DateTime @updatedAt
 
-  // N:M roles
   roles UsuarioRol[]
 
-  // Perfiles opcionales (solo para usuarios que sí entran)
   coordinador    CoordinadorUnidad?
   adminDivision  AdministradorDivision?
   secretaria     SecretariaUnidad?
   servicioSocial UsuarioServicioSocial[]
 
-  // Auditoría / actividad
   bitacoras Bitacora[]
 
-  // Negocio
   comisionesCreadas Comision[] @relation("UsuarioCreadorComision")
 
   comisionesCanceladas Comision[] @relation("ComisionCanceladaPor")
@@ -175,7 +154,6 @@ model Sesion {
   usuarioId Int
   usuario   Usuario @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
 
-  // Guardamos HASH del token (el token real vive en cookie)
   tokenHash String @unique
 
   creadoEn DateTime @default(now())
@@ -235,11 +213,6 @@ model RolPermiso {
   @@index([permisoId])
 }
 
-///
- / =========================
- / DIVISION / UNIDADES / CARGOS
- / =========================
- //
 
 model Division {
   id          Int     @id @default(autoincrement())
@@ -254,7 +227,7 @@ model Division {
 
   comisiones Comision[]
 
-  docentes Docente[] // <- docentes pertenecen a división
+  docentes Docente[]
 
   creadoEn      DateTime @default(now())
   actualizadoEn DateTime @updatedAt
@@ -283,7 +256,6 @@ model UnidadAdministrativa {
   @@index([divisionId])
 }
 
-// Admin de división: 1 usuario -> 1 división
 model AdministradorDivision {
   id        Int     @id @default(autoincrement())
   usuarioId Int     @unique
@@ -318,7 +290,6 @@ model SecretariaUnidad {
   @@index([divisionId])
 }
 
-// Coordinador: solo de unidad (y por unidad obtienes su división)
 model CoordinadorUnidad {
   id        Int     @id @default(autoincrement())
   usuarioId Int     @unique
@@ -335,27 +306,22 @@ model CoordinadorUnidad {
 
 model UsuarioServicioSocial {
   id        Int     @id @default(autoincrement())
-  usuarioId Int // Relación con el usuario
+  usuarioId Int 
   usuario   Usuario @relation(fields: [usuarioId], references: [id])
 
-  divisionId Int // Relación con la división
+  divisionId Int 
   division   Division @relation(fields: [divisionId], references: [id])
 
-  unidadAdministrativaId Int // Relación con la unidad administrativa
+  unidadAdministrativaId Int 
   unidadAdministrativa   UnidadAdministrativa @relation(fields: [unidadAdministrativaId], references: [id])
 
   creadoEn      DateTime @default(now())
   actualizadoEn DateTime @updatedAt
 
-  @@index([divisionId]) // Index para optimizar consultas por división
-  @@index([unidadAdministrativaId]) // Index para optimizar consultas por unidad administrativa
+  @@index([divisionId]) 
+  @@index([unidadAdministrativaId]) 
 }
 
-///
- / =========================
- / DOCENTES (CATÁLOGO SIN LOGIN)
- / =========================
- //
 
 model Docente {
   id      Int    @id @default(autoincrement())
@@ -365,8 +331,8 @@ model Docente {
   division   Division @relation(fields: [divisionId], references: [id])
 
   areaConProf       String?
-  gradoPrefijo      String? // ej "Ing.", "Dr.", "Mtro."
-  gradoEspecialidad String? // ej "Ingeniería en Sistemas Computacionales"
+  gradoPrefijo      String?
+  gradoEspecialidad String?
 
   nombreProf   String
   apePatProf   String
@@ -386,11 +352,6 @@ model Docente {
   @@index([activo])
 }
 
-///
- / =========================
- / COMISIONES
- / =========================
- //
 
 model TipoComision {
   id                  Int              @id @default(autoincrement())
@@ -444,7 +405,6 @@ model Comision {
 
   observaciones String?
 
-  // Relaciones
   docentesComision DocenteComision[]
   lugarId          Int?
   lugar            Lugar?            @relation(fields: [lugarId], references: [id])
@@ -473,11 +433,6 @@ model DocenteComision {
   @@index([comisionId])
 }
 
-///
- / =========================
- / LUGARES
- / =========================
- //
 
 model Lugar {
   id               Int            @id @default(autoincrement())
@@ -496,11 +451,6 @@ model Lugar {
   actualizadoEn DateTime @updatedAt
 }
 
-///
- / =========================
- / BITÁCORA
- / =========================
- //
 
 model Bitacora {
   id Int @id @default(autoincrement())
