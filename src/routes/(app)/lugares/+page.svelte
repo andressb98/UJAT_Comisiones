@@ -5,7 +5,7 @@
 	import { hasFieldError, firstFieldError } from '$lib/utils/forms/field';
 	import { invalidateAll } from '$app/navigation';
 	import { toast } from 'svelte-sonner';
-	import BotonExportar from '$lib/components/botones/BotonExportar.svelte';
+	import BotonExportar from '$lib/components/botones/botonExportar.svelte';
 	import { hasPermiso } from '$lib/utils/permisos';
 	import LugaresTable from '$lib/components/forms/TableForms.svelte'
 
